@@ -1,16 +1,17 @@
+/* eslint-disable no-unused-vars */
 import React from 'react';
 import YAML from 'js-yaml';
 
 type Props = {
   secrets: any[];
   selectedSecretVersionIndex: number;
-  setSelectedSecretVersionIndex: (n: number) => void;
+  setSelectedSecretVersionIndex: (..._args: any[]) => void;
   secretFormat: 'kv' | 'json' | 'yaml';
-  setSecretFormat: (f: 'kv' | 'json' | 'yaml') => void;
+  setSecretFormat: (..._args: any[]) => void;
   secretEntries: Array<{ key: string; value: string }>;
-  updateSecretEntry: (index: number, field: 'key' | 'value', newValue: string) => void;
+  updateSecretEntry: (..._args: any[]) => void;
   addSecretEntry: () => void;
-  removeSecretEntry: (index: number) => void;
+  removeSecretEntry: (..._args: any[]) => void;
 };
 
 const flatToNested = (flatObj: Record<string, any>): Record<string, any> => {

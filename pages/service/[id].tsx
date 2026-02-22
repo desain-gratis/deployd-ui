@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import YAML from 'js-yaml';
+// YAML not used in this file (Env/Secret tabs handle YAML rendering)
 import FlexSearch from 'flexsearch';
 import DeploymentTab from '../../components/ServiceTabs/DeploymentTab';
 import JobLogTab from '../../components/ServiceTabs/JobLogTab';
@@ -461,22 +461,19 @@ export default function ServiceDetail() {
                 const allHosts = new Set([...configureHosts, ...restartHosts]);
                 
                 if (allHosts.size > 0) {
-                  reconstructedTarget = Array.from(allHosts).map((host) => {
-                    const existing = updated[index].target?.find((t: any) => t.host === host);
-                    return {
-                      host,
-                      configure_host_job: {
-                        status: {
-                          [host]: job.configure_host_job?.status?.[host],
-                        },
+                  reconstructedTarget = Array.from(allHosts).map((host) => ({
+                    host,
+                    configure_host_job: {
+                      status: {
+                        [host]: job.configure_host_job?.status?.[host],
                       },
-                      restart_host_job: {
-                        status: {
-                          [host]: job.restart_service_job?.status?.[host],
-                        },
+                    },
+                    restart_host_job: {
+                      status: {
+                        [host]: job.restart_service_job?.status?.[host],
                       },
-                    };
-                  });
+                    },
+                  }));
                 }
                 
                 // Deep merge the new job data with existing to preserve all fields
@@ -723,21 +720,7 @@ export default function ServiceDetail() {
     return 'bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
   };
 
-  const flatToNested = (flatObj: Record<string, any>): Record<string, any> => {
-    const result: Record<string, any> = {};
-    for (const [key, value] of Object.entries(flatObj)) {
-      const parts = key.split('.');
-      let current = result;
-      for (let i = 0; i < parts.length - 1; i++) {
-        if (!current[parts[i]]) {
-          current[parts[i]] = {};
-        }
-        current = current[parts[i]];
-      }
-      current[parts[parts.length - 1]] = value;
-    }
-    return result;
-  };
+  // flatToNested removed from this file because it's unused here
 
   return (
     <div>

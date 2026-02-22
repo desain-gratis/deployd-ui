@@ -1,16 +1,17 @@
+/* eslint-disable no-unused-vars */
 import React from 'react';
 import YAML from 'js-yaml';
 
 type Props = {
   envs: any[];
   selectedEnvVersionIndex: number;
-  setSelectedEnvVersionIndex: (n: number) => void;
+  setSelectedEnvVersionIndex: (..._args: any[]) => void;
   envFormat: 'kv' | 'json' | 'yaml';
-  setEnvFormat: (f: 'kv' | 'json' | 'yaml') => void;
+  setEnvFormat: (..._args: any[]) => void;
   envEntries: Array<{ key: string; value: string }>;
-  updateEnvEntry: (index: number, field: 'key' | 'value', newValue: string) => void;
+  updateEnvEntry: (..._args: any[]) => void;
   addEnvEntry: () => void;
-  removeEnvEntry: (index: number) => void;
+  removeEnvEntry: (..._args: any[]) => void;
 };
 
 const flatToNested = (flatObj: Record<string, any>): Record<string, any> => {

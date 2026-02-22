@@ -1,8 +1,9 @@
+/* eslint-disable no-unused-vars */
 import React from 'react';
 
 type Props = {
   jobLogs: Array<{ message: any; timestamp: string }>;
-  setJobLogs: (logs: Array<{ message: any; timestamp: string }>) => void;
+  setJobLogs: (..._args: any[]) => void;
 };
 
 export default function JobLogTab({ jobLogs, setJobLogs }: Props) {

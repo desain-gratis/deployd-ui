@@ -1,11 +1,12 @@
+/* eslint-disable no-unused-vars */
 import React from 'react';
 
 type Props = {
   jobs: any[];
   selectedJobIndex: number;
-  setSelectedJobIndex: (n: number) => void;
-  setDataModal: (d: any) => void;
-  getStatusBadgeColor: (s?: string) => string;
+  setSelectedJobIndex: (..._args: any[]) => void;
+  setDataModal: (..._args: any[]) => void;
+  getStatusBadgeColor: (..._args: any[]) => string;
 };
 
 export default function DeploymentTab({

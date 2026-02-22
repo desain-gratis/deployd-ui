@@ -1,15 +1,16 @@
+/* eslint-disable no-unused-vars */
 import React from 'react';
 
 type Props = {
   builds: any[];
   filteredBuilds: any[];
   buildSearchText: string;
-  setBuildSearchText: (s: string) => void;
+  setBuildSearchText: (..._args: any[]) => void;
   selectedBuildBranch: string | null;
-  setSelectedBuildBranch: (b: string | null) => void;
+  setSelectedBuildBranch: (..._args: any[]) => void;
   selectedBuildActor: string | null;
-  setSelectedBuildActor: (a: string | null) => void;
-  setDataModal: (d: any) => void;
+  setSelectedBuildActor: (..._args: any[]) => void;
+  setDataModal: (..._args: any[]) => void;
 };
 
 export default function ReleasesTab({
@@ -97,7 +98,7 @@ export default function ReleasesTab({
                   <td className="px-3 py-2 align-top">{b.actor}</td>
                   <td className="px-3 py-2 align-top">
                     {b.archive && b.archive.length > 0 ? (
-                      b.archive.map((a, i) => (
+                      b.archive.map((a: any, i: number) => (
                         <div key={i}>
                           <a href={a.url} className="text-blue-600 dark:text-blue-400" target="_blank" rel="noreferrer">
                             {a.id ?? 'download'}
