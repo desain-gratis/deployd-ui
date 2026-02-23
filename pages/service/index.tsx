@@ -82,7 +82,7 @@ type Build = {
 
 export default function ServiceDetail() {
   const router = useRouter();
-  const { id } = router.query as { id?: string };
+  const { id, tab } = router.query as { id?: string, tab?: string };
   const { namespace } = useNamespace();
 
   const [service, setService] = useState<Service | null>(null);
@@ -92,7 +92,7 @@ export default function ServiceDetail() {
   const [jobs, setJobs] = useState<ServiceJob[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState('deployment');
+  // const [tab, setTab] = useState(tabParam === '' ? 'deployment' : tabParam);
   const [dataModal, setDataModal] = useState<any | null>(null);
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [releaseBuilds, setReleaseBuilds] = useState<any[]>([]);
@@ -401,9 +401,7 @@ export default function ServiceDetail() {
   // WebSocket connection for real-time job updates (single connection)
   useEffect(() => {
     // Get service ID - prefer router.query.id, fallback to extracting from URL
-    const serviceId = id || (typeof window !== 'undefined' && router.asPath && router.asPath !== '/service/[id]' 
-      ? router.asPath.match(/\/service\/([^/?]+)/)?.[1] 
-      : undefined);
+    const serviceId = id 
 
     if (!serviceId || !namespace) return;
     
@@ -729,7 +727,7 @@ export default function ServiceDetail() {
           <h2 className="text-xl font-semibold">Service: {id}</h2>
           <div className="text-sm text-gray-600 dark:text-gray-300">Namespace: {namespace}</div>
         </div>
-        <Link href="/service" className="text-sm text-blue-600 dark:text-blue-400">
+        <Link href="/service/list" className="text-sm text-blue-600 dark:text-blue-400">
           ← Back to services
         </Link>
       </div>
@@ -811,7 +809,14 @@ export default function ServiceDetail() {
         {['deployment', 'releases', 'job-log', 'secret', 'env'].map((t) => (
           <button
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => {
+              const params = new URLSearchParams();
+              if (id) {
+                params.set('id', id);
+              }
+              params.set('tab', t);
+              router.push("/service?" + params.toString(), undefined, { shallow: true });
+            }}
             className={`px-4 py-2 font-medium text-sm ${
               tab === t
                 ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
@@ -827,7 +832,7 @@ export default function ServiceDetail() {
 
       {/* Placeholder for other tabs */}
       <div ref={tabContentRef} className="transition-all">
-        {tab === 'deployment' && (
+        {(!tab || tab === 'deployment') && (
           <DeploymentTab
             jobs={jobs}
             selectedJobIndex={selectedJobIndex}

@@ -16,14 +16,14 @@ export default function Nav() {
 
         <div className="flex items-center gap-4">
           <nav className="hidden sm:block">
-            <Link href="/host" className="mr-4 text-sm">
+            <Link href="/host/list" className="mr-4 text-sm">
               Host
             </Link>
-            <Link href="/service" className="mr-4 text-sm">
+            <Link href="/service/list" className="mr-4 text-sm">
               Service
             </Link>
-            <Link href="/artifact" className="text-sm">
-              Artifact
+            <Link href="/repository/list" className="text-sm">
+              Repository
             </Link>
           </nav>
 

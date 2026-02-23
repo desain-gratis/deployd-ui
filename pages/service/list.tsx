@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useNamespace } from '../context/NamespaceContext';
+import { useNamespace } from '../../context/NamespaceContext';
 
 type Repository = {
   url?: string;
@@ -74,7 +74,7 @@ export default function ServicePage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {services.map((s) => (
-          <Link key={`${s.namespace}_${s.id}`} href={`/service/${encodeURIComponent(s.id)}`} className="card block">
+          <Link key={`${s.namespace}_${s.id}`} href={`/service/?id=${encodeURIComponent(s.id)}`} className="card block">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-lg font-semibold">{s.name ?? s.id}</div>

@@ -145,7 +145,7 @@ export default function RepositoryDetail() {
           <div className="text-sm text-gray-600 dark:text-gray-300">Namespace: {namespace}</div>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/artifact" className="text-sm text-blue-600 dark:text-blue-400">
+          <Link href="/repository/list" className="text-sm text-blue-600 dark:text-blue-400">
             ← Back to repositories
           </Link>
         </div>

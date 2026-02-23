@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useNamespace } from '../context/NamespaceContext';
-import Modal from '../components/Modal';
+import { useNamespace } from '../../context/NamespaceContext';
+import Modal from '../../components/Modal';
 
 type ClickhouseConfig = {
   address?: string;
