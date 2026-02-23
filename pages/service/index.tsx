@@ -83,7 +83,8 @@ type Build = {
 export default function ServiceDetail() {
   const router = useRouter();
   const { id, tab } = router.query as { id?: string, tab?: string };
-  const { namespace } = useNamespace();
+  const { namespace: _namespace } = useNamespace(); // the user choice
+  // const [namespace, setNamespace] = useState<string>(""); // the local namespace
 
   const [service, setService] = useState<Service | null>(null);
   
@@ -92,7 +93,6 @@ export default function ServiceDetail() {
   const [jobs, setJobs] = useState<ServiceJob[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // const [tab, setTab] = useState(tabParam === '' ? 'deployment' : tabParam);
   const [dataModal, setDataModal] = useState<any | null>(null);
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [releaseBuilds, setReleaseBuilds] = useState<any[]>([]);
@@ -133,17 +133,34 @@ export default function ServiceDetail() {
     const fetchService = async () => {
       try {
         const res = await fetch('http://localhost:9401/deployd/service', {
-          headers: { 'X-Namespace': namespace }
+          headers: { 'X-Namespace': _namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!mounted) return;
         const found = Array.isArray(data.success) ? data.success.find((s: any) => s.id === id) : null;
         setService(found ?? null);
+        // setNamespace(found.namespace); // use the service's namespace; not the context one
       } catch (err: any) {
         if (mounted) setError(err.message || 'Failed to fetch service');
       }
     };
+
+    setLoading(true);
+    fetchService();
+
+    return () => {
+      mounted = false;
+    };
+  }, [_namespace, id]); // use global namespace
+
+  useEffect(() => {
+    if (!service || !service.id || !service.namespace) return;
+    let namespace = service.namespace;
+    let id = service.id;
+
+    let mounted = true;
+
 
     // (removed fetchJob - deployment history is handled by fetchJobs)
 
@@ -291,8 +308,6 @@ export default function ServiceDetail() {
       }
     };
 
-    setLoading(true);
-    fetchService();
     fetchSecrets();
     fetchEnvs();
     fetchJobs();
@@ -300,12 +315,16 @@ export default function ServiceDetail() {
     return () => {
       mounted = false;
     };
-  }, [id, namespace]);
+  }, [service]);
 
   // Fetch builds when service is available
   useEffect(() => {
     if (!service?.repository?.id) return;
+    if (!service || !service.id || !service.namespace) return;
+    let namespace = service.namespace;
+
     let mounted = true;
+
 
     const fetchBuilds = async () => {
       try {
@@ -344,7 +363,7 @@ export default function ServiceDetail() {
     return () => {
       mounted = false;
     };
-  }, [service?.repository?.id, namespace]);
+  }, [service?.repository?.id, service?.namespace]);
 
   // Update secretEntries when selected version changes
   useEffect(() => {
@@ -400,10 +419,11 @@ export default function ServiceDetail() {
 
   // WebSocket connection for real-time job updates (single connection)
   useEffect(() => {
-    // Get service ID - prefer router.query.id, fallback to extracting from URL
-    const serviceId = id 
+    if (!service || !service.id || !service.namespace) return;
+    let namespace = service.namespace;
+    let id = service.id;
 
-    if (!serviceId || !namespace) return;
+    const serviceId = id 
     
     let mounted = true;
     let ws: WebSocket | null = null;
@@ -414,8 +434,8 @@ export default function ServiceDetail() {
       
       try {
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-        const host = window.location.host;
-        const wsUrl = `${protocol}://${host.replace('3000', '9401')}/deployd/job/tail/ws?service=${serviceId}&namespace=${namespace}`;
+        // const host = window.location.host;
+        const wsUrl = `${protocol}://localhost:9401/deployd/job/tail/ws?service=${serviceId}&namespace=${namespace}`;
         ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
@@ -526,7 +546,7 @@ export default function ServiceDetail() {
         ws = null;
       }
     };
-  }, [id, namespace, router.asPath]);
+  }, [service?.id, service?.namespace]);
 
   // Keep tab content container from collapsing/shrinking when switching tabs.
   const tabContentRef = useRef<HTMLDivElement | null>(null);
@@ -554,8 +574,12 @@ export default function ServiceDetail() {
 
   const openDeployModal = async () => {
     if (!id) return;
+    if (!service || !service.id || !service.namespace) return;
     setDeployError(null);
     setReleaseLoading(true);
+
+    let namespace = service.namespace;
+
     try {
       // Fetch builds (artifactd)
       const bRes = await fetch('http://localhost:9401/artifactd/build', {
@@ -640,7 +664,7 @@ export default function ServiceDetail() {
         }
       }));
 
-      const payloadNamespace = service?.namespace || namespace || 'deployd';
+      const payloadNamespace = service?.namespace  || 'deployd';
 
       const payload: any = {
         namespace: payloadNamespace,
@@ -725,7 +749,7 @@ export default function ServiceDetail() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-xl font-semibold">Service: {id}</h2>
-          <div className="text-sm text-gray-600 dark:text-gray-300">Namespace: {namespace}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">Namespace: {service?.namespace}</div>
         </div>
         <Link href="/service/list" className="text-sm text-blue-600 dark:text-blue-400">
           ← Back to services
@@ -811,14 +835,12 @@ export default function ServiceDetail() {
             key={t}
             onClick={() => {
               const params = new URLSearchParams();
-              if (id) {
-                params.set('id', id);
-              }
-              params.set('tab', t);
+              id && params.set('id', id);
+              t && params.set('tab', t);
               router.push("/service?" + params.toString(), undefined, { shallow: true });
             }}
             className={`px-4 py-2 font-medium text-sm ${
-              tab === t
+              (tab ? tab === t : 'deployment' === t)
                 ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
             }`}
