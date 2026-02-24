@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React from 'react';
+import { formatRelativeTime, formatLocalDateTime } from '../../lib/time';
 
 type Props = {
   jobs: any[];
@@ -9,7 +10,6 @@ type Props = {
   getStatusBadgeColor: (..._args: any[]) => string;
 };
 
-/* 🎨 Status → Color Badge */
 function getHostStatusColor(status?: string) {
   switch (status) {
     case 'SUCCESS':
@@ -74,9 +74,7 @@ function HostStatusTable({ job }: { job: any }) {
                   key={target.host}
                   className="border-b border-gray-200 dark:border-gray-700"
                 >
-                  <td className="px-2 py-2 font-medium">
-                    {target.host}
-                  </td>
+                  <td className="px-2 py-2 font-medium">{target.host}</td>
 
                   <td className="px-2 py-2">
                     <span
@@ -131,6 +129,7 @@ export default function DeploymentTab({
             <label className="block text-sm font-medium mb-1">
               Select Job
             </label>
+
             <select
               value={selectedJobIndex}
               onChange={(e) => setSelectedJobIndex(Number(e.target.value))}
@@ -138,7 +137,7 @@ export default function DeploymentTab({
             >
               {jobs.map((j, idx) => (
                 <option key={idx} value={idx}>
-                  {j.id} - {new Date(j.published_at || '').toLocaleString()} ({j.status || 'UNKNOWN'})
+                  {j.id} - {formatRelativeTime(j.published_at)} ({j.status || 'UNKNOWN'})
                 </option>
               ))}
             </select>
@@ -153,8 +152,15 @@ export default function DeploymentTab({
                     <div className="text-sm font-medium">
                       Job ID: {selectedJob.id}
                     </div>
+
                     <div className="text-sm text-gray-600 dark:text-gray-300">
-                      Published: {new Date(selectedJob.published_at || '').toLocaleString()}
+                      Published:{' '}
+                      <span
+                        title={formatLocalDateTime(selectedJob.published_at)}
+                        className="cursor-help underline decoration-dotted"
+                      >
+                        {formatRelativeTime(selectedJob.published_at)}
+                      </span>
                     </div>
                   </div>
 
