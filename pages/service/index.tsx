@@ -12,6 +12,7 @@ import SecretTab from '../../components/ServiceTabs/SecretTab';
 import EnvTab from '../../components/ServiceTabs/EnvTab';
 import { useNamespace } from '../../context/NamespaceContext';
 import Modal from '../../components/Modal';
+import { formatRelativeTime, formatLocalDateTime } from '../../lib/time';
 
 type Repository = {
   url?: string;
@@ -771,7 +772,12 @@ export default function ServiceDetail() {
                 Ports: {service.bound_addresses.map((b) => `${b.host}:${b.port}`).join(', ')}
               </div>
             )}
-            <div className="text-sm text-gray-500 mt-2">Published: {service.published_at}</div>
+            <div className="text-sm text-gray-500 mt-2">
+              Published:{' '}
+              <span title={formatLocalDateTime(service.published_at)}>
+                {formatRelativeTime(service.published_at)}
+              </span>
+            </div>
             {/* New-version banner */}
             {(hasNewBuild || hasNewEnv || hasNewSecret) && (
               <div className="mt-3 p-3 rounded-lg border-l-4 bg-teal-50 dark:bg-teal-900/20 border-teal-400">
@@ -788,7 +794,10 @@ export default function ServiceDetail() {
                     </div>
                     {lastSuccessfulJob?.request && (
                       <div className="text-xs text-teal-700 dark:text-teal-300 mt-2">
-                        Last deployed: {lastSuccessfulJob.published_at} —
+                        Last deployed:{' '}
+                        <span title={formatLocalDateTime(lastSuccessfulJob.published_at)}>
+                        {formatRelativeTime(lastSuccessfulJob.published_at)}
+                        </span>{' '} —
                         build {String((lastSuccessfulJob.request as any).build_version ?? '-')},
                         env {String((lastSuccessfulJob.request as any).env_version ?? '-')},
                         secret {String((lastSuccessfulJob.request as any).secret_version ?? '-')}
@@ -961,7 +970,7 @@ export default function ServiceDetail() {
                 {envs.length > 0 ? (
                   envs.map((ev, idx) => (
                     <option key={idx} value={idx}>
-                      {ev.id ?? ev.version ?? `v${idx}`} (published {new Date(ev.published_at || '').toLocaleString()})
+                      {ev.id ?? ev.version ?? `v${idx}`} (published {formatRelativeTime(ev.published_at)})
                     </option>
                   ))
                 ) : (
@@ -980,7 +989,7 @@ export default function ServiceDetail() {
                 {secrets.length > 0 ? (
                   secrets.map((s, idx) => (
                     <option key={idx} value={idx}>
-                      {s.id ?? s.version ?? `v${idx}`} (published {new Date(s.published_at || '').toLocaleString()})
+                      {s.id ?? s.version ?? `v${idx}`} (published {formatRelativeTime(s.published_at)})
                     </option>
                   ))
                 ) : (
@@ -1003,7 +1012,7 @@ export default function ServiceDetail() {
             </div>
 
             <div className="flex gap-2 justify-end mt-2">
-              <button onClick={() => setShowDeployModal(false)} className="px-3 py-2 bg-gray-200 rounded text-sm">Cancel</button>
+              <button onClick={() => setShowDeployModal(false)} className="px-3 py-2 bg-gray-600 rounded text-sm">Cancel</button>
               <button onClick={handleDeploy} className="px-3 py-2 bg-indigo-600 text-white rounded text-sm">Deploy</button>
             </div>
           </div>
