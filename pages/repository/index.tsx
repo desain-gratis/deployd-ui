@@ -6,6 +6,7 @@ import Link from 'next/link';
 import FlexSearch from 'flexsearch';
 import { useNamespace } from '../../context/NamespaceContext';
 import Modal from '../../components/Modal';
+import ReleasesTable from '../../components/ServiceTabs/ReleasesTable';
 
 type Repository = {
   id: string;
@@ -217,57 +218,12 @@ export default function RepositoryDetail() {
         </div>
       </div>
 
-      <div className="overflow-auto">
-        <table className="w-full text-sm table-auto border-collapse">
-          <thead>
-            <tr className="text-left border-b">
-              <th className="px-3 py-2">ID</th>
-              <th className="px-3 py-2">Commit</th>
-              <th className="px-3 py-2">Branch</th>
-              <th className="px-3 py-2">Actor</th>
-              <th className="px-3 py-2">Archive</th>
-              <th className="px-3 py-2">Data</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredBuilds.length > 0 ? (
-              filteredBuilds.map((b) => (
-                <tr key={b.id} className="border-b">
-                  <td className="px-3 py-2 align-top">{b.id}</td>
-                  <td className="px-3 py-2 align-top">{b.commit_id}</td>
-                  <td className="px-3 py-2 align-top">{b.branch}</td>
-                  <td className="px-3 py-2 align-top">{b.actor}</td>
-                  <td className="px-3 py-2 align-top">
-                    {b.archive && b.archive.length > 0 ? (
-                      b.archive.map((a, i) => (
-                        <div key={i}>
-                          <a href={a.url} className="text-blue-600 dark:text-blue-400" target="_blank" rel="noreferrer">
-                            {a.id ?? 'download'}
-                          </a>
-                        </div>
-                      ))
-                    ) : (
-                      <span className="text-gray-500">-</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 align-top">
-                    <button onClick={() => setDataModal(b.data)} className="text-sm text-blue-600 dark:text-blue-400">
-                      View JSON
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={6} className="px-3 py-4 text-center text-sm text-gray-600 dark:text-gray-400">
-                  No builds found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
+      {/* Table */}
+      <ReleasesTable
+        filteredBuilds={ filteredBuilds}
+        setDataModal={setDataModal}
+      />
+        
       {dataModal && (
         <Modal title="Build Data" onClose={() => setDataModal(null)}>
           <pre className="text-xs bg-gray-100 dark:bg-gray-900 p-3 rounded text-[11px] overflow-auto">{JSON.stringify(dataModal, null, 2)}</pre>

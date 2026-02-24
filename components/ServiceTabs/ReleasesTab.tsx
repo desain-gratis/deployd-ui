@@ -1,21 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useMemo } from 'react';
-import { formatLocalDateTime, formatRelativeTime } from '../../lib/time';
-
-type ArchiveItem = {
-  id?: string;
-  url: string;
-};
-
-type Build = {
-  id: string | number;
-  commit_id?: string;
-  branch?: string;
-  actor?: string;
-  archive?: ArchiveItem[];
-  data?: unknown;
-  published_at?: string; // ISO string
-};
+import { Build } from '../../types/service';
+import ReleasesTable from './ReleasesTable';
 
 type Props = {
   builds: Build[];
@@ -29,7 +15,6 @@ type Props = {
   setDataModal: (data: unknown) => void;
 };
 
-const SHORT_COMMIT_LENGTH = 7;
 
 export default function ReleasesTab({
   builds,
@@ -57,13 +42,6 @@ export default function ReleasesTab({
       ) as string[],
     [builds]
   );
-
-  const truncateCommit = (commit?: string) => {
-    if (!commit) return '-';
-    return commit.length > SHORT_COMMIT_LENGTH
-      ? commit.slice(0, SHORT_COMMIT_LENGTH)
-      : commit;
-  };
 
   return (
     <div>
@@ -126,104 +104,11 @@ export default function ReleasesTab({
       </div>
 
       {/* Table */}
-      <div className="overflow-auto">
-        <table className="w-full text-sm table-auto border-collapse">
-          <thead>
-            <tr className="text-left border-b">
-              <th className="px-3 py-2">ID</th>
-              <th className="px-3 py-2">Commit</th>
-              <th className="px-3 py-2">Branch</th>
-              <th className="px-3 py-2">Actor</th>
-              <th className="px-3 py-2">Published</th>
-              <th className="px-3 py-2">Archive</th>
-              <th className="px-3 py-2">Data</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredBuilds.length > 0 ? (
-              filteredBuilds.map((b) => {
-                const published = b.published_at
-                  ? new Date(b.published_at)
-                  : null;
-
-                return (
-                  <tr
-                    key={b.id}
-                    className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                  >
-                    <td className="px-3 py-2 align-top">{b.id}</td>
-
-                    <td
-                      className="px-3 py-2 align-top font-mono"
-                      title={b.commit_id}
-                    >
-                      {truncateCommit(b.commit_id)}
-                    </td>
-
-                    <td className="px-3 py-2 align-top">
-                      {b.branch ?? '-'}
-                    </td>
-
-                    <td className="px-3 py-2 align-top">
-                      {b.actor ?? '-'}
-                    </td>
-
-                    <td
-                      className="px-3 py-2 align-top text-gray-600 dark:text-gray-400"
-                      title={
-                        published
-                          ? formatLocalDateTime(b.published_at)
-                          : undefined
-                      }
-                    >
-                      {published
-                        ? formatRelativeTime(b.published_at)
-                        : '-'}
-                    </td>
-
-                    <td className="px-3 py-2 align-top">
-                      {b.archive && b.archive.length > 0 ? (
-                        b.archive.map((a) => (
-                          <div key={a.url}>
-                            <a
-                              href={a.url}
-                              className="text-blue-600 dark:text-blue-400 hover:underline"
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {a.id ?? 'download'}
-                            </a>
-                          </div>
-                        ))
-                      ) : (
-                        <span className="text-gray-500">-</span>
-                      )}
-                    </td>
-
-                    <td className="px-3 py-2 align-top">
-                      <button
-                        onClick={() => setDataModal(b.data)}
-                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        View JSON
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td
-                  colSpan={7}
-                  className="px-3 py-4 text-center text-sm text-gray-600 dark:text-gray-400"
-                >
-                  No releases found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <ReleasesTable
+        filteredBuilds={ filteredBuilds}
+        setDataModal={setDataModal}
+      />
+        
     </div>
   );
 }
