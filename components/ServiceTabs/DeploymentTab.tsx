@@ -44,17 +44,22 @@ function HostStatusTable({ job }: { job: any }) {
       <div className="font-medium mb-3">Host Deployment Status</div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm table-fixed">
+        <table className="min-w-[700px] w-full text-sm table-fixed">
           <thead>
             <tr className="border-b border-gray-300 dark:border-gray-700">
-              <th className="text-left px-3 py-2 font-medium w-[20%]">Host</th>
-              <th className="text-left px-3 py-2 font-medium w-[15%]">
+              <th className="text-left px-3 py-2 font-medium w-[160px]">
+                Host
+              </th>
+
+              <th className="text-left px-3 py-2 font-medium w-[130px]">
                 Configure
               </th>
-              <th className="text-left px-3 py-2 font-medium w-[15%]">
+
+              <th className="text-left px-3 py-2 font-medium w-[130px]">
                 Restart
               </th>
-              <th className="text-left px-3 py-2 font-medium w-[50%]">
+
+              <th className="text-left px-3 py-2 font-medium">
                 Error Message
               </th>
             </tr>
@@ -74,22 +79,24 @@ function HostStatusTable({ job }: { job: any }) {
                 job.configure_host_job?.status?.[target.host]?.error_message ||
                 job.restart_service_job?.status?.[target.host]?.error_message ||
                 "";
-              
+
               const isExpanded = expandedRow === target.host;
               const hasError = !!errorMessage;
 
               return (
                 <tr
                   key={target.host}
-                  className="border-b border-gray-200 dark:border-gray-700 align-top"
+                  className="border-b border-gray-200 dark:border-gray-700 align-top hover:bg-gray-100 dark:hover:bg-gray-700/40 transition"
                 >
-                  <td className="px-3 py-3 font-medium break-words">
+                  {/* Host */}
+                  <td className="px-3 py-3 font-medium break-all">
                     {target.host}
                   </td>
 
+                  {/* Configure */}
                   <td className="px-3 py-3">
                     <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${getHostStatusColor(
+                      className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${getHostStatusColor(
                         configureStatus
                       )}`}
                     >
@@ -97,9 +104,10 @@ function HostStatusTable({ job }: { job: any }) {
                     </span>
                   </td>
 
+                  {/* Restart */}
                   <td className="px-3 py-3">
                     <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${getHostStatusColor(
+                      className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${getHostStatusColor(
                         restartStatus
                       )}`}
                     >
@@ -107,6 +115,7 @@ function HostStatusTable({ job }: { job: any }) {
                     </span>
                   </td>
 
+                  {/* Error */}
                   <td className="px-3 py-3">
                     {!hasError ? (
                       <span className="text-gray-400 text-xs">—</span>
@@ -114,18 +123,22 @@ function HostStatusTable({ job }: { job: any }) {
                       <div className="space-y-2">
                         <div
                           className={`
-                            text-xs font-mono 
-                            bg-red-50 dark:bg-red-900/20 
-                            text-red-700 dark:text-red-300 
-                            rounded p-2
-                            whitespace-pre-wrap break-words
-                            ${!isExpanded ? "line-clamp-2" : ""}
+                            text-xs font-mono
+                            bg-red-50 dark:bg-red-900/20
+                            text-red-700 dark:text-red-300
+                            border border-red-200 dark:border-red-800
+                            rounded-md
+                            p-2
+                            whitespace-pre-wrap
+                            break-words
+                            leading-relaxed
+                            ${!isExpanded ? "line-clamp-3" : ""}
                           `}
                         >
                           {errorMessage}
                         </div>
 
-                        {errorMessage.length > 120 && (
+                        {errorMessage.length > 140 && (
                           <button
                             onClick={() =>
                               setExpandedRow(
@@ -134,7 +147,7 @@ function HostStatusTable({ job }: { job: any }) {
                             }
                             className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                           >
-                            {isExpanded ? "Show less" : "Show more"}
+                            {isExpanded ? "Show less" : "Show full error"}
                           </button>
                         )}
                       </div>
@@ -149,6 +162,7 @@ function HostStatusTable({ job }: { job: any }) {
     </div>
   );
 }
+
 export default function DeploymentTab({
   jobs,
   selectedJobIndex,
@@ -215,7 +229,7 @@ export default function DeploymentTab({
               </div>
 
               {/* Status Banner */}
-              {selectedJob.status === 'FAILED' && (
+              {/* {selectedJob.status === 'FAILED' && (
                 <div className="p-4 rounded bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 font-medium">
                   Deployment Failed
                 </div>
@@ -233,7 +247,7 @@ export default function DeploymentTab({
                   <div className="p-4 rounded bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 font-medium">
                     Deployment In Progress — Status: {selectedJob.status}
                   </div>
-                )}
+                )} */}
 
               {/* Unified Host Table */}
               <HostStatusTable job={selectedJob} />
