@@ -1,17 +1,35 @@
 /* eslint-disable no-unused-vars */
-import React from 'react';
+import React, { useMemo } from 'react';
+import { formatLocalDateTime, formatRelativeTime } from '../../lib/time';
+
+type ArchiveItem = {
+  id?: string;
+  url: string;
+};
+
+type Build = {
+  id: string | number;
+  commit_id?: string;
+  branch?: string;
+  actor?: string;
+  archive?: ArchiveItem[];
+  data?: unknown;
+  published_at?: string; // ISO string
+};
 
 type Props = {
-  builds: any[];
-  filteredBuilds: any[];
+  builds: Build[];
+  filteredBuilds: Build[];
   buildSearchText: string;
-  setBuildSearchText: (..._args: any[]) => void;
+  setBuildSearchText: (value: string) => void;
   selectedBuildBranch: string | null;
-  setSelectedBuildBranch: (..._args: any[]) => void;
+  setSelectedBuildBranch: (value: string | null) => void;
   selectedBuildActor: string | null;
-  setSelectedBuildActor: (..._args: any[]) => void;
-  setDataModal: (..._args: any[]) => void;
+  setSelectedBuildActor: (value: string | null) => void;
+  setDataModal: (data: unknown) => void;
 };
+
+const SHORT_COMMIT_LENGTH = 7;
 
 export default function ReleasesTab({
   builds,
@@ -24,10 +42,34 @@ export default function ReleasesTab({
   setSelectedBuildActor,
   setDataModal,
 }: Props) {
+  const branches = useMemo(
+    () =>
+      Array.from(
+        new Set(builds.map((b) => b.branch).filter(Boolean))
+      ) as string[],
+    [builds]
+  );
+
+  const actors = useMemo(
+    () =>
+      Array.from(
+        new Set(builds.map((b) => b.actor).filter(Boolean))
+      ) as string[],
+    [builds]
+  );
+
+  const truncateCommit = (commit?: string) => {
+    if (!commit) return '-';
+    return commit.length > SHORT_COMMIT_LENGTH
+      ? commit.slice(0, SHORT_COMMIT_LENGTH)
+      : commit;
+  };
+
   return (
     <div>
       <h3 className="text-lg font-medium mb-4">Releases</h3>
 
+      {/* Filters */}
       <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
@@ -40,30 +82,36 @@ export default function ReleasesTab({
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm"
             />
           </div>
+
           <div>
             <label className="block text-sm font-medium mb-1">Branch</label>
             <select
               value={selectedBuildBranch ?? ''}
-              onChange={(e) => setSelectedBuildBranch(e.target.value || null)}
+              onChange={(e) =>
+                setSelectedBuildBranch(e.target.value || null)
+              }
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm"
             >
               <option value="">All branches</option>
-              {Array.from(new Set(builds.map((b) => b.branch))).map((branch) => (
+              {branches.map((branch) => (
                 <option key={branch} value={branch}>
                   {branch}
                 </option>
               ))}
             </select>
           </div>
+
           <div>
             <label className="block text-sm font-medium mb-1">Actor</label>
             <select
               value={selectedBuildActor ?? ''}
-              onChange={(e) => setSelectedBuildActor(e.target.value || null)}
+              onChange={(e) =>
+                setSelectedBuildActor(e.target.value || null)
+              }
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm"
             >
               <option value="">All actors</option>
-              {Array.from(new Set(builds.map((b) => b.actor))).map((actor) => (
+              {actors.map((actor) => (
                 <option key={actor} value={actor}>
                   {actor}
                 </option>
@@ -71,11 +119,13 @@ export default function ReleasesTab({
             </select>
           </div>
         </div>
+
         <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
           Showing {filteredBuilds.length} of {builds.length} releases
         </div>
       </div>
 
+      {/* Table */}
       <div className="overflow-auto">
         <table className="w-full text-sm table-auto border-collapse">
           <thead>
@@ -84,41 +134,89 @@ export default function ReleasesTab({
               <th className="px-3 py-2">Commit</th>
               <th className="px-3 py-2">Branch</th>
               <th className="px-3 py-2">Actor</th>
+              <th className="px-3 py-2">Published</th>
               <th className="px-3 py-2">Archive</th>
               <th className="px-3 py-2">Data</th>
             </tr>
           </thead>
           <tbody>
             {filteredBuilds.length > 0 ? (
-              filteredBuilds.map((b) => (
-                <tr key={b.id} className="border-b">
-                  <td className="px-3 py-2 align-top">{b.id}</td>
-                  <td className="px-3 py-2 align-top">{b.commit_id}</td>
-                  <td className="px-3 py-2 align-top">{b.branch}</td>
-                  <td className="px-3 py-2 align-top">{b.actor}</td>
-                  <td className="px-3 py-2 align-top">
-                    {b.archive && b.archive.length > 0 ? (
-                      b.archive.map((a: any, i: number) => (
-                        <div key={i}>
-                          <a href={a.url} className="text-blue-600 dark:text-blue-400" target="_blank" rel="noreferrer">
-                            {a.id ?? 'download'}
-                          </a>
-                        </div>
-                      ))
-                    ) : (
-                      <span className="text-gray-500">-</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 align-top">
-                    <button onClick={() => setDataModal(b.data)} className="text-sm text-blue-600 dark:text-blue-400">
-                      View JSON
-                    </button>
-                  </td>
-                </tr>
-              ))
+              filteredBuilds.map((b) => {
+                const published = b.published_at
+                  ? new Date(b.published_at)
+                  : null;
+
+                return (
+                  <tr
+                    key={b.id}
+                    className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                  >
+                    <td className="px-3 py-2 align-top">{b.id}</td>
+
+                    <td
+                      className="px-3 py-2 align-top font-mono"
+                      title={b.commit_id}
+                    >
+                      {truncateCommit(b.commit_id)}
+                    </td>
+
+                    <td className="px-3 py-2 align-top">
+                      {b.branch ?? '-'}
+                    </td>
+
+                    <td className="px-3 py-2 align-top">
+                      {b.actor ?? '-'}
+                    </td>
+
+                    <td
+                      className="px-3 py-2 align-top text-gray-600 dark:text-gray-400"
+                      title={
+                        published
+                          ? formatLocalDateTime(b.published_at)
+                          : undefined
+                      }
+                    >
+                      {published
+                        ? formatRelativeTime(b.published_at)
+                        : '-'}
+                    </td>
+
+                    <td className="px-3 py-2 align-top">
+                      {b.archive && b.archive.length > 0 ? (
+                        b.archive.map((a) => (
+                          <div key={a.url}>
+                            <a
+                              href={a.url}
+                              className="text-blue-600 dark:text-blue-400 hover:underline"
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {a.id ?? 'download'}
+                            </a>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-gray-500">-</span>
+                      )}
+                    </td>
+
+                    <td className="px-3 py-2 align-top">
+                      <button
+                        onClick={() => setDataModal(b.data)}
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        View JSON
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
-                <td colSpan={6} className="px-3 py-4 text-center text-sm text-gray-600 dark:text-gray-400">
+                <td
+                  colSpan={7}
+                  className="px-3 py-4 text-center text-sm text-gray-600 dark:text-gray-400"
+                >
                   No releases found
                 </td>
               </tr>
