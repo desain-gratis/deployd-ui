@@ -24,8 +24,26 @@ export default function JobLogTab({ jobLogs, setJobLogs }: Props) {
         <div className="bg-gray-900 dark:bg-black text-gray-100 p-4 rounded font-mono text-[11px] overflow-auto max-h-[600px] border border-gray-700">
           <div className="space-y-0">
             {[...jobLogs].reverse().map((log, idx) => (
-              <div key={idx} className="text-gray-200 leading-tight">
-                <span className="text-green-400">$</span> {log.message}
+              <div key={idx} className="flex font-mono text-[12px]">
+                {log.message.split(" | ").map((segment: string, i: number) => {
+                  const colors = [
+                    "text-gray-400",     // time
+                    "text-blue-400",     // job
+                    "text-yellow-400",   // status
+                    "text-emerald-400",  // configure
+                    "text-purple-400",   // restart
+                  ];
+
+                  return (
+                    <div
+                      key={i}
+                      className={`${colors[i] ?? "text-gray-300"} px-2 whitespace-nowrap`}
+                    >
+                      {segment}
+                      {i !== 4 && <span className="text-gray-600 px-2">|</span>}
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>

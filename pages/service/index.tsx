@@ -388,13 +388,23 @@ export default function ServiceDetail() {
             if (!job) return;
 
             // Add to job logs with formatted message
-            const logMessage = [
-              `[${new Date().toLocaleTimeString()}] Job: ${job.id}`,
-              `Status: ${job.status}`,
-              job.configure_host_job?.status && `Configure: ${JSON.stringify(job.configure_host_job.status)}`,
-              job.restart_service_job?.status && `Restart: ${JSON.stringify(job.restart_service_job.status)}`,
-            ].filter(Boolean).join(' | ');
+            const formatStatusMap = (
+              statusMap?: Record<string, { status: string }>
+            ) => {
+              if (!statusMap) return "-";
 
+              return Object.entries(statusMap)
+                .map(([host, value]) => `${host}=${value?.status ?? "-"}`)
+                .join(",");
+            };
+
+            const logMessage = [
+              new Date().toLocaleTimeString(),
+              `job=${job.id}`,
+              `status=${job.status}`,
+              `configure=${formatStatusMap(job.configure_host_job?.status)}`,
+              `restart=${formatStatusMap(job.restart_service_job?.status)}`,
+            ].join(" | ");
             setJobLogs((prev) => [
               ...prev,
               {
