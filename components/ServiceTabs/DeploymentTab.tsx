@@ -65,8 +65,8 @@ function HostStatusTable({ job }: { job: any }) {
                 'PENDING';
 
               const errorMessage =
-                target.configure_host_job?.status?.error_message ||
-                target.restart_host_job?.status?.error_message ||
+                target.configure_host_job?.status?.[target.host]?.error_message ||
+                target.restart_host_job?.status?.[target.host]?.error_message ||
                 '-';
 
               return (
