@@ -1,18 +1,12 @@
-"use client";
+/* eslint-disable no-unused-vars */
 
+import React from 'react';
 import { formatLocalDateTime, formatRelativeTime } from '../../lib/time';
 import { Build } from '../../types/service';
 
 
 type Props = {
-//   builds: Build[];
   filteredBuilds: Build[];
-//   buildSearchText: string;
-//   setBuildSearchText: (value: string) => void;
-//   selectedBuildBranch: string | null;
-//   setSelectedBuildBranch: (value: string | null) => void;
-//   selectedBuildActor: string | null;
-//   setSelectedBuildActor: (value: string | null) => void;
   setDataModal: (data: unknown) => void;
 };
 

@@ -63,7 +63,7 @@ export default function RepositoryDetail() {
     const fetchRepo = async () => {
       setLoadingRepo(true);
       try {
-        const res = await fetch('http://localhost:9401/artifactd/repository', { headers: { 'X-Namespace': namespace } });
+        const res = await fetch('http://mb1:9600/artifactd/repository', { headers: { 'X-Namespace': namespace } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!mounted) return;
@@ -79,7 +79,7 @@ export default function RepositoryDetail() {
     const fetchBuilds = async () => {
       setLoadingBuilds(true);
       try {
-        const res = await fetch('http://localhost:9401/artifactd/build', { headers: { 'X-Namespace': namespace } });
+        const res = await fetch('http://mb1:9600/artifactd/build', { headers: { 'X-Namespace': namespace } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!mounted) return;

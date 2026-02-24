@@ -8,11 +8,9 @@ import FlexSearch from 'flexsearch';
 import DeploymentTab from '../../components/ServiceTabs/DeploymentTab';
 import JobLogTab from '../../components/ServiceTabs/JobLogTab';
 import ReleasesTab from '../../components/ServiceTabs/ReleasesTab';
-import SecretTab from '../../components/ServiceTabs/SecretTab';
-import EnvTab from '../../components/ServiceTabs/EnvTab';
 import { useNamespace } from '../../context/NamespaceContext';
 import Modal from '../../components/Modal';
-import { formatRelativeTime, formatLocalDateTime } from '../../lib/time';
+import { formatRelativeTime } from '../../lib/time';
 import ServiceHeaderCard from '../../components/ServiceDetail/ServiceHeaderCard';
 import { Service, Secret, ServiceJob, Build } from '../../types/service';
 import KeyValueEditor from '../../components/ServiceTabs/KeyValueEditor';
@@ -70,7 +68,7 @@ export default function ServiceDetail() {
 
     const fetchService = async () => {
       try {
-        const res = await fetch('http://localhost:9401/deployd/service', {
+        const res = await fetch('http://mb1:9600/deployd/service', {
           headers: { 'X-Namespace': _namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -104,7 +102,7 @@ export default function ServiceDetail() {
 
     const fetchSecrets = async () => {
       try {
-        const res = await fetch('http://localhost:9401/secretd/secret', {
+        const res = await fetch('http://mb1:9600/secretd/secret', {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -121,7 +119,7 @@ export default function ServiceDetail() {
 
     const fetchEnvs = async () => {
       try {
-        const res = await fetch('http://localhost:9401/secretd/env', {
+        const res = await fetch('http://mb1:9600/secretd/env', {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -138,7 +136,7 @@ export default function ServiceDetail() {
 
     const fetchJobs = async () => {
       try {
-        const res = await fetch('http://localhost:9401/deployd/job', {
+        const res = await fetch('http://mb1:9600/deployd/job', {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -161,7 +159,7 @@ export default function ServiceDetail() {
     // Fetch last successful job for this service and detect newer versions
     const detectNewerVersions = async () => {
       try {
-        const sRes = await fetch('http://localhost:9401/deployd/successful-job', { headers: { 'X-Namespace': namespace } });
+        const sRes = await fetch('http://mb1:9600/deployd/successful-job', { headers: { 'X-Namespace': namespace } });
         const sData = await sRes.json();
         const successfulJobs = Array.isArray(sData.success) ? sData.success : [];
         const svcSuccess = successfulJobs.find((j: any) => j.request?.service?.id === id) || null;
@@ -170,9 +168,9 @@ export default function ServiceDetail() {
 
         // fetch current available builds/secrets/envs
         const [bRes, eRes, secRes] = await Promise.all([
-          fetch('http://localhost:9401/artifactd/build', { headers: { 'X-Namespace': namespace } }),
-          fetch('http://localhost:9401/secretd/env', { headers: { 'X-Namespace': namespace } }),
-          fetch('http://localhost:9401/secretd/secret', { headers: { 'X-Namespace': namespace } })
+          fetch('http://mb1:9600/artifactd/build', { headers: { 'X-Namespace': namespace } }),
+          fetch('http://mb1:9600/secretd/env', { headers: { 'X-Namespace': namespace } }),
+          fetch('http://mb1:9600/secretd/secret', { headers: { 'X-Namespace': namespace } })
         ]);
         const [bData, eData, secData] = await Promise.all([bRes.json(), eRes.json(), secRes.json()]);
         const builds = Array.isArray(bData.success) ? bData.success : [];
@@ -266,7 +264,7 @@ export default function ServiceDetail() {
 
     const fetchBuilds = async () => {
       try {
-        const res = await fetch('http://localhost:9401/artifactd/build', {
+        const res = await fetch('http://mb1:9600/artifactd/build', {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -301,7 +299,7 @@ export default function ServiceDetail() {
     return () => {
       mounted = false;
     };
-  }, [service?.repository?.id, service?.namespace]);
+  }, [service, service?.repository?.id, service?.namespace]);
 
   // Update secretEntries when selected version changes
   useEffect(() => {
@@ -373,7 +371,7 @@ export default function ServiceDetail() {
       try {
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         // const host = window.location.host;
-        const wsUrl = `${protocol}://localhost:9401/deployd/job/tail/ws?service=${serviceId}&namespace=${namespace}`;
+        const wsUrl = `${protocol}://mb1:9600/deployd/job/tail/ws?service=${serviceId}&namespace=${namespace}`;
         ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
@@ -494,7 +492,7 @@ export default function ServiceDetail() {
         ws = null;
       }
     };
-  }, [service?.id, service?.namespace]);
+  }, [service, service?.id, service?.namespace]);
 
   // Keep tab content container from collapsing/shrinking when switching tabs.
   const tabContentRef = useRef<HTMLDivElement | null>(null);
@@ -530,7 +528,7 @@ export default function ServiceDetail() {
 
     try {
       // Fetch builds (artifactd)
-      const bRes = await fetch('http://localhost:9401/artifactd/build', {
+      const bRes = await fetch('http://mb1:9600/artifactd/build', {
         headers: { 'X-Namespace': namespace }
       });
       const bData = await bRes.json();
@@ -538,18 +536,18 @@ export default function ServiceDetail() {
       setReleaseBuilds(builds);
 
       // Fetch envs and secrets filtered for this service (reuse endpoints semantics)
-      const eRes = await fetch('http://localhost:9401/secretd/env', { headers: { 'X-Namespace': namespace } });
+      const eRes = await fetch('http://mb1:9600/secretd/env', { headers: { 'X-Namespace': namespace } });
       const eData = await eRes.json();
       const allEnvs = Array.isArray(eData.success) ? eData.success : [];
       const svcEnvs = allEnvs.filter((e: any) => e.service === id);
 
-      const sRes = await fetch('http://localhost:9401/secretd/secret', { headers: { 'X-Namespace': namespace } });
+      const sRes = await fetch('http://mb1:9600/secretd/secret', { headers: { 'X-Namespace': namespace } });
       const sData = await sRes.json();
       const allSecrets = Array.isArray(sData.success) ? sData.success : [];
       const svcSecrets = allSecrets.filter((s: any) => s.service === id);
 
       // Prefer targets from the latest successful job for this service, fallback to /deployd/host
-      const successRes = await fetch('http://localhost:9401/deployd/successful-job', { headers: { 'X-Namespace': namespace } });
+      const successRes = await fetch('http://mb1:9600/deployd/successful-job', { headers: { 'X-Namespace': namespace } });
       const successData = await successRes.json();
       const successfulJobs = Array.isArray(successData.success) ? successData.success : [];
       const successfulForService = successfulJobs.find((j: any) => j.request?.service?.id === id);
@@ -558,7 +556,7 @@ export default function ServiceDetail() {
       if (successfulForService && Array.isArray(successfulForService.target) && successfulForService.target.length > 0) {
         hosts = successfulForService.target.map((t: any) => t.host || t);
       } else {
-        const hRes = await fetch('http://localhost:9401/deployd/host', { headers: { 'X-Namespace': namespace } });
+        const hRes = await fetch('http://mb1:9600/deployd/host', { headers: { 'X-Namespace': namespace } });
         const hData = await hRes.json();
         const hostList = Array.isArray(hData.success) ? hData.success : [];
         hosts = hostList.map((h: any) => h.host || h);
@@ -634,7 +632,7 @@ export default function ServiceDetail() {
         is_believe: true
       };
 
-      const res = await fetch('http://localhost:9401/deployd/submit-job', {
+      const res = await fetch('http://mb1:9600/deployd/submit-job', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

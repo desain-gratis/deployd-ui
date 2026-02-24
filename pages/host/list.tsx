@@ -41,7 +41,7 @@ export default function HostPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch('http://localhost:9401/deployd/host', {
+        const res = await fetch('http://mb1:9600/deployd/host', {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

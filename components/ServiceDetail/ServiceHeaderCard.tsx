@@ -4,16 +4,6 @@ import React from "react";
 import { formatRelativeTime, formatLocalDateTime } from "../../lib/time";
 import { Service, ServiceJob } from "../../types/service";
 
-type Repository = {
-  namespace?: string;
-  id?: string;
-};
-
-type BoundAddress = {
-  host?: string;
-  port?: number;
-};
-
 type Props = {
   service: Service | null;
   loading: boolean;

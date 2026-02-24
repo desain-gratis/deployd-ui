@@ -39,7 +39,7 @@ export default function ServicePage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch('http://localhost:9401/deployd/service', {
+        const res = await fetch('http://mb1:9600/deployd/service', {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
