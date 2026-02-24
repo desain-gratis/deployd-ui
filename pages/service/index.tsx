@@ -15,6 +15,7 @@ import Modal from '../../components/Modal';
 import { formatRelativeTime, formatLocalDateTime } from '../../lib/time';
 import ServiceHeaderCard from '../../components/ServiceDetail/ServiceHeaderCard';
 import { Service, Secret, ServiceJob, Build } from '../../types/service';
+import KeyValueEditor from '../../components/ServiceTabs/KeyValueEditor';
 
 
 export default function ServiceDetail() {
@@ -783,30 +784,42 @@ export default function ServiceDetail() {
         )}
 
         {tab === 'secret' && (
-          <SecretTab
-            secrets={secrets}
-            selectedSecretVersionIndex={selectedSecretVersionIndex}
-            setSelectedSecretVersionIndex={setSelectedSecretVersionIndex}
-            secretFormat={secretFormat}
-            setSecretFormat={setSecretFormat}
-            secretEntries={secretEntries}
-            updateSecretEntry={updateSecretEntry}
-            addSecretEntry={addSecretEntry}
-            removeSecretEntry={removeSecretEntry}
+          <KeyValueEditor
+            title="Secrets"
+            versions={secrets.map((s) => ({
+              version: s.id ?? s.version ?? '',
+              publishedAt: s.published_at,
+              value: s.value ?? {},
+            }))}
+            selectedVersionIndex={selectedSecretVersionIndex}
+            onSelectVersion={setSelectedSecretVersionIndex}
+            format={secretFormat}
+            onFormatChange={setSecretFormat}
+            entries={secretEntries}
+            onUpdateEntry={updateSecretEntry}
+            onAddEntry={addSecretEntry}
+            onRemoveEntry={removeSecretEntry}
+            emptyMessage="No secrets found for this service"
           />
         )}
 
         {tab === 'env' && (
-          <EnvTab
-            envs={envs}
-            selectedEnvVersionIndex={selectedEnvVersionIndex}
-            setSelectedEnvVersionIndex={setSelectedEnvVersionIndex}
-            envFormat={envFormat}
-            setEnvFormat={setEnvFormat}
-            envEntries={envEntries}
-            updateEnvEntry={updateEnvEntry}
-            addEnvEntry={addEnvEntry}
-            removeEnvEntry={removeEnvEntry}
+          <KeyValueEditor
+            title="Environment Variables"
+            versions={envs.map((e) => ({
+              version: e.id ?? e.version ?? '',
+              publishedAt: e.published_at,
+              value: e.value ?? {},
+            }))}
+            selectedVersionIndex={selectedEnvVersionIndex}
+            onSelectVersion={setSelectedEnvVersionIndex}
+            format={envFormat}
+            onFormatChange={setEnvFormat}
+            entries={envEntries}
+            onUpdateEntry={updateEnvEntry}
+            onAddEntry={addEnvEntry}
+            onRemoveEntry={removeEnvEntry}
+            emptyMessage="No environment variables found for this service"
           />
         )}
       </div>
