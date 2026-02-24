@@ -37,46 +37,57 @@ function getHostStatusColor(status?: string) {
 }
 
 function HostStatusTable({ job }: { job: any }) {
+  const [expandedRow, setExpandedRow] = React.useState<string | null>(null);
+
   return (
     <div className="p-4 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
       <div className="font-medium mb-3">Host Deployment Status</div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-fixed">
           <thead>
             <tr className="border-b border-gray-300 dark:border-gray-700">
-              <th className="text-left px-2 py-2 font-medium">Host</th>
-              <th className="text-left px-2 py-2 font-medium">Configure Status</th>
-              <th className="text-left px-2 py-2 font-medium">Restart Status</th>
-              <th className="text-left px-2 py-2 font-medium">Error Message</th>
+              <th className="text-left px-3 py-2 font-medium w-[20%]">Host</th>
+              <th className="text-left px-3 py-2 font-medium w-[15%]">
+                Configure
+              </th>
+              <th className="text-left px-3 py-2 font-medium w-[15%]">
+                Restart
+              </th>
+              <th className="text-left px-3 py-2 font-medium w-[50%]">
+                Error Message
+              </th>
             </tr>
           </thead>
 
           <tbody>
             {job.target?.map((target: any) => {
               const configureStatus =
-                target.configure_host_job?.status?.status ||
                 job.configure_host_job?.status?.[target.host]?.status ||
-                'PENDING';
+                "PENDING";
 
               const restartStatus =
-                target.restart_host_job?.status?.status ||
                 job.restart_service_job?.status?.[target.host]?.status ||
-                'PENDING';
+                "PENDING";
 
               const errorMessage =
-                target.configure_host_job?.status?.[target.host]?.error_message ||
-                target.restart_host_job?.status?.[target.host]?.error_message ||
-                '-';
+                job.configure_host_job?.status?.[target.host]?.error_message ||
+                job.restart_service_job?.status?.[target.host]?.error_message ||
+                "";
+              
+              const isExpanded = expandedRow === target.host;
+              const hasError = !!errorMessage;
 
               return (
                 <tr
                   key={target.host}
-                  className="border-b border-gray-200 dark:border-gray-700"
+                  className="border-b border-gray-200 dark:border-gray-700 align-top"
                 >
-                  <td className="px-2 py-2 font-medium">{target.host}</td>
+                  <td className="px-3 py-3 font-medium break-words">
+                    {target.host}
+                  </td>
 
-                  <td className="px-2 py-2">
+                  <td className="px-3 py-3">
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${getHostStatusColor(
                         configureStatus
@@ -86,7 +97,7 @@ function HostStatusTable({ job }: { job: any }) {
                     </span>
                   </td>
 
-                  <td className="px-2 py-2">
+                  <td className="px-3 py-3">
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${getHostStatusColor(
                         restartStatus
@@ -96,8 +107,38 @@ function HostStatusTable({ job }: { job: any }) {
                     </span>
                   </td>
 
-                  <td className="px-2 py-2 text-xs text-red-600 dark:text-red-400">
-                    {errorMessage}
+                  <td className="px-3 py-3">
+                    {!hasError ? (
+                      <span className="text-gray-400 text-xs">—</span>
+                    ) : (
+                      <div className="space-y-2">
+                        <div
+                          className={`
+                            text-xs font-mono 
+                            bg-red-50 dark:bg-red-900/20 
+                            text-red-700 dark:text-red-300 
+                            rounded p-2
+                            whitespace-pre-wrap break-words
+                            ${!isExpanded ? "line-clamp-2" : ""}
+                          `}
+                        >
+                          {errorMessage}
+                        </div>
+
+                        {errorMessage.length > 120 && (
+                          <button
+                            onClick={() =>
+                              setExpandedRow(
+                                isExpanded ? null : target.host
+                              )
+                            }
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                          >
+                            {isExpanded ? "Show less" : "Show more"}
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </td>
                 </tr>
               );
@@ -108,7 +149,6 @@ function HostStatusTable({ job }: { job: any }) {
     </div>
   );
 }
-
 export default function DeploymentTab({
   jobs,
   selectedJobIndex,

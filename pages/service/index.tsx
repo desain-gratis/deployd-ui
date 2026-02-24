@@ -432,7 +432,7 @@ export default function ServiceDetail() {
                         [host]: job.configure_host_job?.status?.[host],
                       },
                     },
-                    restart_host_job: {
+                    restart_service_job: {
                       status: {
                         [host]: job.restart_service_job?.status?.[host],
                       },
