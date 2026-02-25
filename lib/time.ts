@@ -57,3 +57,27 @@ export function formatRelativeTime(dateString?: string): string {
     const diffYear = Math.floor(diffMonth / 12);
     return `${diffYear}y ago`;
 }
+
+
+export function formatTimeDifference(startDateString?: string, endDateString?: string): string {
+    const startDate = parseServerDate(startDateString);
+    if (!startDate) return '-';
+    const endDate = parseServerDate(endDateString);
+    if (!endDate) return '-';
+
+    // Calculate the time difference in milliseconds and take the absolute value
+    const diffInMs: number = Math.abs(endDate.getTime() - startDate.getTime());
+
+    // Convert milliseconds to total seconds
+    const totalSeconds: number = Math.floor(diffInMs / 1000);
+
+    // Calculate minutes and remaining seconds
+    const minutes: number = Math.floor(totalSeconds / 60);
+    const seconds: number = totalSeconds % 60;
+
+    // Pad minutes and seconds with leading zeros if they are less than 10
+    const formattedMinutes: string = minutes.toString().padStart(2, '0');
+    const formattedSeconds: string = seconds.toString().padStart(2, '0');
+
+    return `${formattedMinutes}:${formattedSeconds}`;
+}

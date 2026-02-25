@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React from 'react';
-import { formatRelativeTime, formatLocalDateTime } from '../../lib/time';
+import { formatRelativeTime, formatLocalDateTime, formatTimeDifference } from '../../lib/time';
 
 type Props = {
   jobs: any[];
@@ -207,8 +207,18 @@ export default function DeploymentTab({
                       Job ID: {selectedJob.id}
                     </div>
 
-                    <div className="text-sm text-gray-600 dark:text-gray-300">
-                      Published:{' '}
+                    <div className="text-sm">
+                      Build ver: {selectedJob.request?.build_version}
+                    </div>
+                    <div className="text-sm">
+                      Env ver: {selectedJob.request?.env_version}
+                    </div>
+                    <div className="text-sm">
+                      Secret ver: {selectedJob.request?.secret_version}
+                    </div>
+
+                    <div className="text-sm text-gray-500 mt-2">
+                      Submitted at:{' '}
                       <span
                         title={formatLocalDateTime(selectedJob.published_at)}
                         className="cursor-help underline decoration-dotted"
@@ -216,6 +226,22 @@ export default function DeploymentTab({
                         {formatRelativeTime(selectedJob.published_at)}
                       </span>
                     </div>
+
+                    {
+
+                      selectedJob.finished_at && (
+                        <div className="text-sm text-gray-500 mt-2">
+                      Duration:{' '}
+                      <span
+                        title={"Finished at: " +formatLocalDateTime(selectedJob.finished_at)}
+                        className="cursor-help underline decoration-dotted"
+                      >
+                        {formatTimeDifference(selectedJob.published_at, selectedJob.finished_at)}
+                      </span>
+                    </div>    
+                      )
+                    }
+                    
                   </div>
 
                   <span

@@ -417,52 +417,7 @@ export default function ServiceDetail() {
 
             // Update the job in the jobs list in real-time
             setJobs((prev) => {
-              const index = prev.findIndex((j) => j.id === job.id);
-              if (index >= 0) {
-                const updated = [...prev];
-                
-                // Reconstruct target array from WebSocket data if we have host status info
-                let reconstructedTarget = updated[index].target;
-                const configureHosts = Object.keys(job.configure_host_job?.status || {});
-                const restartHosts = Object.keys(job.restart_service_job?.status || {});
-                const allHosts = new Set([...configureHosts, ...restartHosts]);
-                
-                if (allHosts.size > 0) {
-                  reconstructedTarget = Array.from(allHosts).map((host) => ({
-                    host,
-                    configure_host_job: {
-                      status: {
-                        [host]: job.configure_host_job?.status?.[host],
-                      },
-                    },
-                    restart_service_job: {
-                      status: {
-                        [host]: job.restart_service_job?.status?.[host],
-                      },
-                    },
-                  }));
-                }
-                
-                // Deep merge the new job data with existing to preserve all fields
-                updated[index] = {
-                  ...updated[index],
-                  ...job,
-                  target: reconstructedTarget,
-                  // Ensure nested objects are properly merged
-                  configure_host_job: {
-                    ...updated[index].configure_host_job,
-                    ...job.configure_host_job,
-                  },
-                  restart_service_job: {
-                    ...updated[index].restart_service_job,
-                    ...job.restart_service_job,
-                  },
-                };
-                return updated;
-              } else {
-                // New job - add to the top
-                return [job, ...prev];
-              }
+              return [...addJob(prev, job)];
             });
           } catch (err) {
             console.error('Failed to parse websocket message:', err);
@@ -653,6 +608,14 @@ export default function ServiceDetail() {
       setDeploySuccess(true);
       setDeploySuccessMessage(`Deployment job submitted successfully. Job ID: ${data.success?.job?.id || 'Unknown'}`);
       setShowDeployModal(false);
+
+      if (data.success) {
+        const job = data.success.job
+        setJobs((prev) => {
+          return [...addJob(prev, job)];
+        });
+      } 
+
       // Auto-dismiss after 5 seconds
       setTimeout(() => setDeploySuccess(false), 5000);
     } catch (err: any) {
@@ -925,4 +888,53 @@ export default function ServiceDetail() {
       )}
     </div>
   );
+}
+
+function addJob(prev: ServiceJob[], job: ServiceJob) {
+  const index = prev.findIndex((j) => j.id === job.id);
+  if (index >= 0) {
+    const updated = [...prev];
+  
+    // Reconstruct target array from WebSocket data if we have host status info
+    let reconstructedTarget = updated[index].target;
+    const configureHosts = Object.keys(job.configure_host_job?.status || {});
+    const restartHosts = Object.keys(job.restart_service_job?.status || {});                
+    const allHosts = new Set([...configureHosts, ...restartHosts]);
+
+    if (allHosts.size > 0) {
+      reconstructedTarget = Array.from(allHosts).map((host) => ({
+        host,
+        configure_host_job: {
+          status: {
+            [host]: job.configure_host_job?.status?.[host],
+          },
+        },
+        restart_service_job: {
+          status: {
+            [host]: job.restart_service_job?.status?.[host],
+          },
+        },
+      }));
+    }
+    
+    // Deep merge the new job data with existing to preserve all fields
+    updated[index] = {
+      ...updated[index],
+      ...job,
+      target: reconstructedTarget,
+      // Ensure nested objects are properly merged
+      configure_host_job: {
+        ...updated[index].configure_host_job,
+        ...job.configure_host_job,
+      },
+      restart_service_job: {
+        ...updated[index].restart_service_job,
+        ...job.restart_service_job,
+      },
+    };
+    return updated;
+  } else {
+    // New job - add to the top
+    return [job, ...prev];
+  }
 }
