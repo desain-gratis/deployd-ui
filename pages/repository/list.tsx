@@ -25,7 +25,7 @@ export default function ArtifactPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch('http://mb1:9600/artifactd/repository', {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/artifactd/repository`, {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
