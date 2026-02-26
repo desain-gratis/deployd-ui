@@ -14,6 +14,7 @@ import { formatRelativeTime } from '../../lib/time';
 import ServiceHeaderCard from '../../components/ServiceDetail/ServiceHeaderCard';
 import { Service, Secret, ServiceJob, Build } from '../../types/service';
 import KeyValueEditor from '../../components/ServiceTabs/KeyValueEditor';
+import { truncateCommit } from '../../components/ServiceTabs/ReleasesTable';
 
 
 export default function ServiceDetail() {
@@ -551,13 +552,13 @@ export default function ServiceDetail() {
         ? selectedBuild.id
         : Number(selectedBuild?.id ?? selectedReleaseIndex) || selectedReleaseIndex;
 
-      const secret_version = selectedSecret && (typeof selectedSecret.id === 'number')
-        ? selectedSecret.id
-        : Number(selectedSecret?.id ?? selectedSecretForDeploy) || selectedSecretForDeploy;
+      const secret_version = selectedSecret && (typeof selectedSecret.version === 'number')
+        ? selectedSecret.version
+        : Number(selectedSecret?.version ?? selectedSecretForDeploy) || selectedSecretForDeploy;
 
-      const env_version = selectedEnv && (typeof selectedEnv.id === 'number')
-        ? selectedEnv.id
-        : Number(selectedEnv?.id ?? selectedEnvForDeploy) || selectedEnvForDeploy;
+      const env_version = selectedEnv && (typeof selectedEnv.version === 'number')
+        ? selectedEnv.version
+        : Number(selectedEnv?.version ?? selectedEnvForDeploy) || selectedEnvForDeploy;
 
       const target_hosts = hostsForDeploy.map((h, idx) => ({
         host: h,
@@ -819,7 +820,7 @@ export default function ServiceDetail() {
                 {releaseBuilds.length > 0 ? (
                   releaseBuilds.map((b, idx) => (
                     <option key={idx} value={idx}>
-                      {b.id ?? b.version ?? JSON.stringify(b)}
+                      {b.id ?? b.version ?? JSON.stringify(b)} - {truncateCommit(b.commit_id) }
                     </option>
                   ))
                 ) : (
