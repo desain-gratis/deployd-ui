@@ -41,6 +41,10 @@ export default function ServiceDetail() {
   const [hostsForDeploy, setHostsForDeploy] = useState<string[]>([]);
   const [lastSuccessfulJob, setLastSuccessfulJob] = useState<ServiceJob | null>(null);
   const [hasNewBuild, setHasNewBuild] = useState(false);
+  const [latestBuild, setLatestBuild] = useState<Build | null>(null);
+  const [latestBuildVersion, setLatestBuildVersion] = useState<number | null>(null);
+  const [latestEnvVersion, setLatestEnvVersion] = useState<number | null>(null);
+  const [latestSecretVersion, setLatestSecretVersion] = useState<number | null>(null);
   const [hasNewSecret, setHasNewSecret] = useState(false);
   const [hasNewEnv, setHasNewEnv] = useState(false);
   const [suggestedReleaseIndex, setSuggestedReleaseIndex] = useState<number | null>(null);
@@ -214,8 +218,15 @@ export default function ServiceDetail() {
     }, 0);
 
     const latestBuildVersion = Number(builds[latestBuildIndex]?.id ?? NaN);
+    const latestBuild = builds[latestBuildIndex];
     const latestEnvVersion = Number(envs[latestEnvIndex]?.id ?? NaN);
     const latestSecretVersion = Number(secrets[latestSecretIndex]?.id ?? NaN);
+
+
+    setLatestBuild(latestBuild);
+    setLatestBuildVersion(isNaN(latestBuildVersion) ? null : latestBuildVersion);
+    setLatestEnvVersion(isNaN(latestEnvVersion) ? null : latestEnvVersion);
+    setLatestSecretVersion(isNaN(latestSecretVersion) ? null : latestSecretVersion);
 
     const newBuild =
       !isNaN(latestBuildVersion) &&
@@ -621,7 +632,6 @@ export default function ServiceDetail() {
     return 'bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
   };
 
-  // flatToNested removed from this file because it's unused here
 
   return (
     <div>
@@ -645,6 +655,10 @@ export default function ServiceDetail() {
         hasNewEnv={hasNewEnv}
         hasNewSecret={hasNewSecret}
         lastSuccessfulJob={lastSuccessfulJob}
+        latestBuildVersion={latestBuildVersion}
+        latestBuild={latestBuild}
+        latestEnvVersion={latestEnvVersion}
+        latestSecretVersion={latestSecretVersion}
         onCreateDeployment={openDeployModal}
       /> : (
         !loading && <div className="text-sm text-gray-600">Service not found.</div>
