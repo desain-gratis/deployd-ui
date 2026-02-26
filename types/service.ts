@@ -62,6 +62,7 @@ export type Build = {
     branch?: string;
     actor?: string;
     tag?: string;
+    source?: string;
     data?: any;
     published_at?: string;
     repository_id?: string;

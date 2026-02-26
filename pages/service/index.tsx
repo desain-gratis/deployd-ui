@@ -24,7 +24,7 @@ export default function ServiceDetail() {
   // const [namespace, setNamespace] = useState<string>(""); // the local namespace
 
   const [service, setService] = useState<Service | null>(null);
-  
+
   const [secrets, setSecrets] = useState<Secret[]>([]);
   const [envs, setEnvs] = useState<Secret[]>([]);
   const [jobs, setJobs] = useState<ServiceJob[]>([]);
@@ -157,102 +157,86 @@ export default function ServiceDetail() {
       }
     };
 
-    // Fetch last successful job for this service and detect newer versions
-    const detectNewerVersions = async () => {
-      try {
-        const sRes = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/successful-job`, { headers: { 'X-Namespace': namespace } });
-        const sData = await sRes.json();
-        const successfulJobs = Array.isArray(sData.success) ? sData.success : [];
-        const svcSuccess = successfulJobs.find((j: any) => j.request?.service?.id === id) || null;
-        if (!mounted) return;
-        setLastSuccessfulJob(svcSuccess);
+    const fetchLastSuccessfulJob = async () => {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/successful-job`,
+        { headers: { "X-Namespace": service.namespace } }
+      );
+      const data = await res.json();
+      const successfulJobs = Array.isArray(data.success) ? data.success : [];
+      const svcSuccess =
+        successfulJobs.find((j: any) => j.request?.service?.id === service.id) ||
+        null;
 
-        // fetch current available builds/secrets/envs
-        const [bRes, eRes, secRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/artifactd/build`, { headers: { 'X-Namespace': namespace } }),
-          fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/env`, { headers: { 'X-Namespace': namespace } }),
-          fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/secret`, { headers: { 'X-Namespace': namespace } })
-        ]);
-        const [bData, eData, secData] = await Promise.all([bRes.json(), eRes.json(), secRes.json()]);
-        const builds = Array.isArray(bData.success) ? bData.success : [];
-        const allEnvs = Array.isArray(eData.success) ? eData.success : [];
-        const allSecrets = Array.isArray(secData.success) ? secData.success : [];
-
-        // Determine latest indices for builds, envs, secrets (prefer numeric version, else published_at)
-        const latestBuildIndex = builds.reduce((best: number, b: any, idx: number) => {
-          const v = Number(b.id ?? NaN);
-          const bestV = Number(builds[best]?.id ?? NaN);
-          if (isNaN(bestV) && isNaN(v)) return best; // keep
-          if (isNaN(bestV)) return idx;
-          if (isNaN(v)) return best;
-          return v > bestV ? idx : best;
-        }, 0);
-
-        const svcEnvs = allEnvs.filter((e: any) => e.service === id);
-        const svcSecrets = allSecrets.filter((s: any) => s.service === id);
-
-        const latestEnvIndex = svcEnvs.reduce((best: number, e: any, idx: number) => {
-          const v = Number(e.id ?? NaN);
-          const bestV = Number(svcEnvs[best]?.id ?? NaN);
-          if (isNaN(bestV) && isNaN(v)) return best;
-          if (isNaN(bestV)) return idx;
-          if (isNaN(v)) return best;
-          return v > bestV ? idx : best;
-        }, 0);
-
-        const latestSecretIndex = svcSecrets.reduce((best: number, s: any, idx: number) => {
-          const v = Number(s.id ?? NaN);
-          const bestV = Number(svcSecrets[best]?.id ?? NaN);
-          if (isNaN(bestV) && isNaN(v)) return best;
-          if (isNaN(bestV)) return idx;
-          if (isNaN(v)) return best;
-          return v > bestV ? idx : best;
-        }, 0);
-
-        // Compare against last successful job's request
-        if (svcSuccess && svcSuccess.request) {
-          const req = svcSuccess.request as any;
-          const reqBuild = Number(req.build_version ?? NaN);
-          const reqSecret = Number(req.secret_version ?? NaN);
-          const reqEnv = Number(req.env_version ?? NaN);
-
-          const latestBuildVersion = Number(builds[latestBuildIndex]?.id ?? NaN);
-          const latestEnvVersion = Number(svcEnvs[latestEnvIndex]?.id ?? NaN);
-          const latestSecretVersion = Number(svcSecrets[latestSecretIndex]?.id ?? NaN);
-
-          const newBuild = !isNaN(latestBuildVersion) && (!isFinite(reqBuild) || latestBuildVersion > reqBuild);
-          const newEnv = !isNaN(latestEnvVersion) && (!isFinite(reqEnv) || latestEnvVersion > reqEnv);
-          const newSecret = !isNaN(latestSecretVersion) && (!isFinite(reqSecret) || latestSecretVersion > reqSecret);
-
-          setHasNewBuild(newBuild);
-          setHasNewEnv(newEnv);
-          setHasNewSecret(newSecret);
-
-          // store suggested indices if newer
-          setSuggestedReleaseIndex(newBuild ? latestBuildIndex : null);
-          setSuggestedEnvIndex(newEnv ? latestEnvIndex : null);
-          setSuggestedSecretIndex(newSecret ? latestSecretIndex : null);
-        } else {
-          setHasNewBuild(false);
-          setHasNewEnv(false);
-          setHasNewSecret(false);
-          setSuggestedReleaseIndex(null);
-          setSuggestedEnvIndex(null);
-          setSuggestedSecretIndex(null);
-        }
-      } catch (err) {
-        // ignore detection errors
-      }
+      setLastSuccessfulJob(svcSuccess);
     };
 
     fetchSecrets();
     fetchEnvs();
     fetchJobs();
-    detectNewerVersions();
+    fetchLastSuccessfulJob();
+
     return () => {
       mounted = false;
     };
   }, [service]);
+
+  useEffect(() => {
+    if (!service?.id || !lastSuccessfulJob) return;
+
+    const req = lastSuccessfulJob.request as any;
+    const reqBuild = Number(req?.build_version ?? NaN);
+    const reqSecret = Number(req?.secret_version ?? NaN);
+    const reqEnv = Number(req?.env_version ?? NaN);
+
+    const latestBuildIndex = builds.reduce((best, b, idx) => {
+      const v = Number(b.id ?? NaN);
+      const bestV = Number(builds[best]?.id ?? NaN);
+      if (isNaN(bestV)) return idx;
+      if (isNaN(v)) return best;
+      return v > bestV ? idx : best;
+    }, 0);
+
+    const latestEnvIndex = envs.reduce((best, e, idx) => {
+      const v = Number(e.id ?? NaN);
+      const bestV = Number(envs[best]?.id ?? NaN);
+      if (isNaN(bestV)) return idx;
+      if (isNaN(v)) return best;
+      return v > bestV ? idx : best;
+    }, 0);
+
+    const latestSecretIndex = secrets.reduce((best, s, idx) => {
+      const v = Number(s.id ?? NaN);
+      const bestV = Number(secrets[best]?.id ?? NaN);
+      if (isNaN(bestV)) return idx;
+      if (isNaN(v)) return best;
+      return v > bestV ? idx : best;
+    }, 0);
+
+    const latestBuildVersion = Number(builds[latestBuildIndex]?.id ?? NaN);
+    const latestEnvVersion = Number(envs[latestEnvIndex]?.id ?? NaN);
+    const latestSecretVersion = Number(secrets[latestSecretIndex]?.id ?? NaN);
+
+    const newBuild =
+      !isNaN(latestBuildVersion) &&
+      (!isFinite(reqBuild) || latestBuildVersion > reqBuild);
+
+    const newEnv =
+      !isNaN(latestEnvVersion) &&
+      (!isFinite(reqEnv) || latestEnvVersion > reqEnv);
+
+    const newSecret =
+      !isNaN(latestSecretVersion) &&
+      (!isFinite(reqSecret) || latestSecretVersion > reqSecret);
+
+    setHasNewBuild(newBuild);
+    setHasNewEnv(newEnv);
+    setHasNewSecret(newSecret);
+
+    setSuggestedReleaseIndex(newBuild ? latestBuildIndex : null);
+    setSuggestedEnvIndex(newEnv ? latestEnvIndex : null);
+    setSuggestedSecretIndex(newSecret ? latestSecretIndex : null);
+  }, [builds, envs, secrets, lastSuccessfulJob, service?.id]);
 
   // Fetch builds when service is available
   useEffect(() => {
@@ -360,15 +344,15 @@ export default function ServiceDetail() {
     let namespace = service.namespace;
     let id = service.id;
 
-    const serviceId = id 
-    
+    const serviceId = id
+
     let mounted = true;
     let ws: WebSocket | null = null;
     let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const connectWebSocket = () => {
       if (!mounted || ws) return; // Prevent duplicate connections
-      
+
       try {
         const endpoint = process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT!
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -478,44 +462,30 @@ export default function ServiceDetail() {
   };
 
   const openDeployModal = async () => {
-    if (!id) return;
-    if (!service || !service.id || !service.namespace) return;
+    if (!service?.id || !service.namespace) return;
+
     setDeployError(null);
     setReleaseLoading(true);
 
-    let namespace = service.namespace;
-
     try {
-      // Fetch builds (artifactd)
-      const bRes = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/artifactd/build`, {
-        headers: { 'X-Namespace': namespace }
-      });
-      const bData = await bRes.json();
-      const builds = Array.isArray(bData.success) ? bData.success : [];
+      // Reuse already-fetched state
       setReleaseBuilds(builds);
 
-      // Fetch envs and secrets filtered for this service (reuse endpoints semantics)
-      const eRes = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/env`, { headers: { 'X-Namespace': namespace } });
-      const eData = await eRes.json();
-      const allEnvs = Array.isArray(eData.success) ? eData.success : [];
-      const svcEnvs = allEnvs.filter((e: any) => e.service === id);
-
-      const sRes = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/secret`, { headers: { 'X-Namespace': namespace } });
-      const sData = await sRes.json();
-      const allSecrets = Array.isArray(sData.success) ? sData.success : [];
-      const svcSecrets = allSecrets.filter((s: any) => s.service === id);
-
-      // Prefer targets from the latest successful job for this service, fallback to /deployd/host
-      const successRes = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/successful-job`, { headers: { 'X-Namespace': namespace } });
-      const successData = await successRes.json();
-      const successfulJobs = Array.isArray(successData.success) ? successData.success : [];
-      const successfulForService = successfulJobs.find((j: any) => j.request?.service?.id === id);
-
+      // Hosts: prefer last successful job
       let hosts: string[] = [];
-      if (successfulForService && Array.isArray(successfulForService.target) && successfulForService.target.length > 0) {
-        hosts = successfulForService.target.map((t: any) => t.host || t);
+
+      if (
+        lastSuccessfulJob &&
+        Array.isArray(lastSuccessfulJob.target) &&
+        lastSuccessfulJob.target.length > 0
+      ) {
+        hosts = lastSuccessfulJob.target.map((t: any) => t.host || t);
       } else {
-        const hRes = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/host`, { headers: { 'X-Namespace': namespace } });
+        // Only fetch hosts if absolutely needed
+        const hRes = await fetch(
+          `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/host`,
+          { headers: { "X-Namespace": service.namespace } }
+        );
         const hData = await hRes.json();
         const hostList = Array.isArray(hData.success) ? hData.success : [];
         hosts = hostList.map((h: any) => h.host || h);
@@ -523,18 +493,14 @@ export default function ServiceDetail() {
 
       setHostsForDeploy(hosts);
 
-      // Use suggested indices (if detection found new versions) otherwise default to 0
+      // Use suggested indices already computed
       setSelectedReleaseIndex(suggestedReleaseIndex ?? 0);
       setSelectedEnvForDeploy(suggestedEnvIndex ?? 0);
       setSelectedSecretForDeploy(suggestedSecretIndex ?? 0);
 
-      // Merge envs/secrets into local state so modal can show them (we keep the main page states for list rendering elsewhere)
-      setEnvs(svcEnvs);
-      setSecrets(svcSecrets);
-
       setShowDeployModal(true);
     } catch (err: any) {
-      setDeployError(err?.message || 'Failed to load deployment data');
+      setDeployError(err?.message || "Failed to load deployment data");
     } finally {
       setReleaseLoading(false);
     }
@@ -569,7 +535,7 @@ export default function ServiceDetail() {
         }
       }));
 
-      const payloadNamespace = service?.namespace  || 'deployd';
+      const payloadNamespace = service?.namespace || 'deployd';
 
       const payload: any = {
         namespace: payloadNamespace,
@@ -615,7 +581,7 @@ export default function ServiceDetail() {
         setJobs((prev) => {
           return [...addJob(prev, job)];
         });
-      } 
+      }
 
       // Auto-dismiss after 5 seconds
       setTimeout(() => setDeploySuccess(false), 5000);
@@ -678,19 +644,28 @@ export default function ServiceDetail() {
         hasNewBuild={hasNewBuild}
         hasNewEnv={hasNewEnv}
         hasNewSecret={hasNewSecret}
-        lastSuccessfulJob={lastSuccessfulJob }
+        lastSuccessfulJob={lastSuccessfulJob}
         onCreateDeployment={openDeployModal}
       /> : (
         !loading && <div className="text-sm text-gray-600">Service not found.</div>
       )}
 
-      {/* Deploy button */}
-      <div className="flex items-center justify-end mb-2">
+      {/* Deploy Action */}
+      <div className="flex items-center justify-end mb-4">
         <button
           onClick={openDeployModal}
-          className="px-3 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
+          className="
+      px-4 py-2.5
+      text-sm font-semibold
+      rounded-lg
+      border border-gray-900 dark:border-gray-100
+      bg-gray-900 dark:bg-gray-100
+      text-white dark:text-gray-900
+      hover:opacity-90
+      transition-all duration-150
+    "
         >
-          DEPLOY
+          Deploy
         </button>
       </div>
 
@@ -705,11 +680,10 @@ export default function ServiceDetail() {
               t && params.set('tab', t);
               router.push("/service?" + params.toString(), undefined, { shallow: true });
             }}
-            className={`px-4 py-2 font-medium text-sm ${
-              (tab ? tab === t : 'deployment' === t)
-                ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            }`}
+            className={`px-4 py-2 font-medium text-sm ${(tab ? tab === t : 'deployment' === t)
+              ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
           >
             {t === 'job-log' ? 'Job Log' : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
@@ -723,6 +697,7 @@ export default function ServiceDetail() {
         {(!tab || tab === 'deployment') && (
           <DeploymentTab
             jobs={jobs}
+            builds={builds}
             selectedJobIndex={selectedJobIndex}
             setSelectedJobIndex={setSelectedJobIndex}
             setDataModal={setDataModal}
@@ -820,7 +795,7 @@ export default function ServiceDetail() {
                 {releaseBuilds.length > 0 ? (
                   releaseBuilds.map((b, idx) => (
                     <option key={idx} value={idx}>
-                      {b.id ?? b.version ?? JSON.stringify(b)} - {truncateCommit(b.commit_id) }
+                      {b.id ?? b.version ?? JSON.stringify(b)} - {truncateCommit(b.commit_id)}
                     </option>
                   ))
                 ) : (
@@ -895,11 +870,11 @@ function addJob(prev: ServiceJob[], job: ServiceJob) {
   const index = prev.findIndex((j) => j.id === job.id);
   if (index >= 0) {
     const updated = [...prev];
-  
+
     // Reconstruct target array from WebSocket data if we have host status info
     let reconstructedTarget = updated[index].target;
     const configureHosts = Object.keys(job.configure_host_job?.status || {});
-    const restartHosts = Object.keys(job.restart_service_job?.status || {});                
+    const restartHosts = Object.keys(job.restart_service_job?.status || {});
     const allHosts = new Set([...configureHosts, ...restartHosts]);
 
     if (allHosts.size > 0) {
@@ -917,7 +892,7 @@ function addJob(prev: ServiceJob[], job: ServiceJob) {
         },
       }));
     }
-    
+
     // Deep merge the new job data with existing to preserve all fields
     updated[index] = {
       ...updated[index],
