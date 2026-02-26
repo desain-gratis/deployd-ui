@@ -60,24 +60,33 @@ export default function ReleasesTable({
                       {b.id}
                     </td>
 
-                    <td
-                      className="px-4 py-3 align-top"
-                    >
-                      {b.source === "github" && b.data?.head_commit ? (
-                        <div className="space-y-1 min-w-[180px] max-w-[260px]">
+                    <td className="px-4 py-3 align-top">
+                      {b.source === "github" ? (
+                        <div className="space-y-1 min-w-[200px] max-w-[280px]">
 
-                          <span className="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-800 px-2 py-0.5 font-mono text-xs text-gray-700 dark:text-gray-300"
-                            title={b.commit_id}
-                          >
-                            {truncateCommit(b.commit_id)}
-                          </span>
+                          {/* Commit SHA */}
+                          {b.commit_id && (
+                            <span
+                              className="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-800 px-2 py-0.5 font-mono text-xs text-gray-700 dark:text-gray-300"
+                              title={b.commit_id}
+                            >
+                              {truncateCommit(b.commit_id)}
+                            </span>
+                          )}
 
-                          <div className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1"
-                            title={b.data.head_commit.message}
-                          >
-                            {b.data.head_commit.message}
-                          </div>
-
+                          {/* Commit message OR informational label */}
+                          {b.data?.head_commit?.message ? (
+                            <div
+                              className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1"
+                              title={b.data.head_commit.message}
+                            >
+                              {b.data.head_commit.message}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-gray-500 italic">
+                              Manual trigger – no commit message
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <span className="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-800 px-2 py-0.5 font-mono text-xs text-gray-700 dark:text-gray-300">
@@ -91,19 +100,18 @@ export default function ReleasesTable({
                     </td>
 
                     <td className="px-4 py-3 align-middle">
-                      {b.source === "github" && b.data?.head_commit ? (
-                        <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                      {b.source === "github" && b.actor ? (
+                        <div className="flex items-center justify-center gap-2 text-sm text-gray-700 dark:text-gray-300">
 
-                          {b.data.head_commit.author?.username && (
-                            <img
-                              src={`https://github.com/${b.data.head_commit.author.username}.png`}
-                              alt="avatar"
-                              className="w-5 h-5 rounded-full"
-                            />
-                          )}
+                          {/* Avatar from actor */}
+                          <img
+                            src={`https://github.com/${b.actor}.png`}
+                            alt="avatar"
+                            className="w-5 h-5 rounded-full"
+                          />
 
                           <span className="truncate max-w-[120px]">
-                            {b.actor ?? b.data.head_commit.author?.username}
+                            {b.actor}
                           </span>
 
                         </div>
@@ -113,7 +121,6 @@ export default function ReleasesTable({
                         </span>
                       )}
                     </td>
-
                     <td
                       className="px-4 py-3 align-middle text-gray-500 dark:text-gray-400 text-xs"
                       title={

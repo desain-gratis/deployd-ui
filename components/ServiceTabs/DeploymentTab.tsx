@@ -215,28 +215,12 @@ export default function DeploymentTab({
   getStatusBadgeColor,
 }: Props) {
   const selectedJob = jobs[selectedJobIndex];
-  // const selectedBuild = React.useMemo(() => {
-  //   if (!selectedJob?.request?.build_version) return null;
-
-  //   return builds.find(
-  //     (b) => Number(b.id) === Number(selectedJob.request.build_version)
-  //   ) || null;
-  // }, [selectedJob, builds]);
-
-  // const isGithubBuild =
-  //   selectedBuild &&
-  //   selectedBuild.source === "github" &&
-  //   selectedBuild.data &&
-  //   selectedBuild.data.head_commit;
-
   const selectedBuild = builds?.find(
     (b: any) => Number(b.id) === Number(selectedJob?.request?.build_version)
   );
 
   const isGithubBuild =
-    selectedBuild &&
-    selectedBuild.source === "github" &&
-    selectedBuild.data?.head_commit;
+    selectedBuild?.source === "github";
 
   return (
     <div>
@@ -378,9 +362,10 @@ export default function DeploymentTab({
                 {isGithubBuild && (
                   <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-start gap-3">
 
-                    {selectedBuild.data.head_commit.author?.username && (
+                    {/* Avatar from Actor */}
+                    {selectedBuild.actor && (
                       <img
-                        src={`https://github.com/${selectedBuild.data.head_commit.author.username}.png`}
+                        src={`https://github.com/${selectedBuild.actor}.png`}
                         alt="avatar"
                         className="w-7 h-7 rounded-full"
                       />
@@ -388,24 +373,45 @@ export default function DeploymentTab({
 
                     <div className="min-w-0 space-y-1.5">
 
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="font-medium">
-                          {selectedBuild.actor}
-                        </span>
+                      {/* Header row */}
+                      <div className="flex items-center gap-2 text-sm flex-wrap">
 
-                        <span className="text-xs text-gray-500">
-                          pushed to {selectedBuild.branch}
-                        </span>
+                        {selectedBuild.actor && (
+                          <span className="font-medium">
+                            {selectedBuild.actor}
+                          </span>
+                        )}
+
+                        {selectedBuild.branch && (
+                          <span className="text-xs text-gray-500">
+                            {selectedBuild.actor ? "pushed to" : "Branch"} {selectedBuild.branch}
+                          </span>
+                        )}
+
+                        {!selectedBuild.data?.head_commit?.message && (
+                          <span className="px-2 py-0.5 rounded-full text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                            Manual Trigger
+                          </span>
+                        )}
                       </div>
 
-                      <div className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
-                        {selectedBuild.data.head_commit.message}
-                      </div>
+                      {/* Commit message */}
+                      {selectedBuild.data?.head_commit?.message ? (
+                        <div className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
+                          {selectedBuild.data.head_commit.message}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500 italic">
+                          No commit message available.
+                        </div>
+                      )}
 
-                      <div className="text-xs text-gray-500 font-mono">
-                        {selectedBuild.commit_id?.slice(0, 7)}
-                      </div>
-
+                      {/* SHA */}
+                      {selectedBuild.commit_id && (
+                        <div className="text-xs text-gray-500 font-mono">
+                          {selectedBuild.commit_id.slice(0, 7)}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
