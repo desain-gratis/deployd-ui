@@ -44,7 +44,7 @@ export type ServiceJob = {
     published_at?: string;
 };
 
-export type Secret = {
+export type KV = {
     namespace?: string;
     service?: string;
     id?: number | string;

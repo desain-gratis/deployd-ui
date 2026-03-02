@@ -81,3 +81,36 @@ export function formatTimeDifference(startDateString?: string, endDateString?: s
 
     return `${formattedMinutes}:${formattedSeconds}`;
 }
+
+export const getStandardizedTimestamp = () => {
+    const now = new Date();
+
+    const pad = (num: number, size = 2) =>
+        String(num).padStart(size, "0");
+
+    const year = now.getFullYear();
+    const month = pad(now.getMonth() + 1);
+    const day = pad(now.getDate());
+    const hours = pad(now.getHours());
+    const minutes = pad(now.getMinutes());
+    const seconds = pad(now.getSeconds());
+
+    // JS only has milliseconds (3 digits)
+    const milliseconds = pad(now.getMilliseconds(), 3);
+
+    // Convert to nanoseconds (pad to 9 digits)
+    const nanoseconds = milliseconds.padEnd(9, "0");
+
+    const offsetMinutes = -now.getTimezoneOffset();
+    const offsetSign = offsetMinutes >= 0 ? "+" : "-";
+    const offsetHours = pad(
+        Math.floor(Math.abs(offsetMinutes) / 60)
+    );
+    const offsetMins = pad(
+        Math.abs(offsetMinutes) % 60
+    );
+
+    const offset = `${offsetSign}${offsetHours}:${offsetMins}`;
+
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${nanoseconds}${offset}`;
+};

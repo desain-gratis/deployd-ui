@@ -12,9 +12,10 @@ import { useNamespace } from '../../context/NamespaceContext';
 import Modal from '../../components/Modal';
 import { formatRelativeTime } from '../../lib/time';
 import ServiceHeaderCard from '../../components/ServiceDetail/ServiceHeaderCard';
-import { Service, Secret, ServiceJob, Build } from '../../types/service';
+import { Service, KV, ServiceJob, Build } from '../../types/service';
 import KeyValueEditor from '../../components/ServiceTabs/KeyValueEditor';
 import { truncateCommit } from '../../components/ServiceTabs/ReleasesTable';
+import { useVersionedKeyValueResource } from '../../src/hooks/resources/useVersionedKeyValueResource';
 
 
 export default function ServiceDetail() {
@@ -25,8 +26,8 @@ export default function ServiceDetail() {
 
   const [service, setService] = useState<Service | null>(null);
 
-  const [secrets, setSecrets] = useState<Secret[]>([]);
-  const [envs, setEnvs] = useState<Secret[]>([]);
+  const [secrets, setSecrets] = useState<KV[]>([]);
+  const [envs, setEnvs] = useState<KV[]>([]);
   const [jobs, setJobs] = useState<ServiceJob[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,12 +51,6 @@ export default function ServiceDetail() {
   const [suggestedReleaseIndex, setSuggestedReleaseIndex] = useState<number | null>(null);
   const [suggestedEnvIndex, setSuggestedEnvIndex] = useState<number | null>(null);
   const [suggestedSecretIndex, setSuggestedSecretIndex] = useState<number | null>(null);
-  const [selectedSecretVersionIndex, setSelectedSecretVersionIndex] = useState(0);
-  const [secretFormat, setSecretFormat] = useState<'kv' | 'json' | 'yaml'>('kv');
-  const [secretEntries, setSecretEntries] = useState<Array<{ key: string; value: string }>>([]);
-  const [selectedEnvVersionIndex, setSelectedEnvVersionIndex] = useState(0);
-  const [envFormat, setEnvFormat] = useState<'kv' | 'json' | 'yaml'>('kv');
-  const [envEntries, setEnvEntries] = useState<Array<{ key: string; value: string }>>([]);
   const [selectedJobIndex, setSelectedJobIndex] = useState(0);
   const [builds, setBuilds] = useState<Build[]>([]);
   const [filteredBuilds, setFilteredBuilds] = useState<Build[]>([]);
@@ -297,33 +292,99 @@ export default function ServiceDetail() {
     };
   }, [service, service?.repository?.id, service?.namespace]);
 
-  // Update secretEntries when selected version changes
-  useEffect(() => {
-    const currentSecret = secrets[selectedSecretVersionIndex];
-    if (currentSecret?.value) {
-      const entries = Object.entries(currentSecret.value).map(([k, v]) => ({
-        key: k,
-        value: String(v)
-      }));
-      setSecretEntries(entries);
-    } else {
-      setSecretEntries([]);
-    }
-  }, [selectedSecretVersionIndex, secrets]);
 
-  // Update envEntries when selected version changes
-  useEffect(() => {
-    const currentEnv = envs[selectedEnvVersionIndex];
-    if (currentEnv?.value) {
-      const entries = Object.entries(currentEnv.value).map(([k, v]) => ({
-        key: k,
-        value: String(v)
-      }));
-      setEnvEntries(entries);
-    } else {
-      setEnvEntries([]);
-    }
-  }, [selectedEnvVersionIndex, envs]);
+  const secretResource = useVersionedKeyValueResource({
+    endpoint: `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/secret`,
+    namespace: service?.namespace || 'deployd',
+    initialVersions: secrets,
+    refetch: async () => {
+      if (!service?.namespace) return;
+
+      // try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/secret`,
+        { headers: { 'X-Namespace': service.namespace } }
+      );
+
+
+      if (!res.ok) {
+        let message = "Unknown error";
+
+        try {
+          const data = await res.json();
+
+          message =
+            data?.error?.errors?.[0]?.message ??
+            `HTTP ${res.status}`;
+        } catch {
+          message = `HTTP ${res.status}`;
+        }
+
+        throw new Error(message);
+      }
+
+
+      const data = await res.json();
+
+      if (data.error) {
+        throw new Error(data.error?.errors?.[0]?.message ?? `HTTP ${res.status}`);
+      }
+
+      const serviceSecrets = Array.isArray(data.success)
+        ? data.success.filter((s: any) => s.service === service.id)
+        : [];
+      setSecrets(serviceSecrets);
+    },
+  });
+
+
+  const envResource = useVersionedKeyValueResource({
+    endpoint: `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/env`,
+    namespace: service?.namespace || 'deployd',
+    initialVersions: envs,
+    refetch: async () => {
+      if (!service?.namespace) return;
+
+      // try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/env`,
+        { headers: { 'X-Namespace': service.namespace } }
+      );
+
+      if (!res.ok) {
+        let message = "Unknown error";
+
+        try {
+          const data = await res.json();
+
+          message =
+            data?.error?.errors?.[0]?.message ??
+            `HTTP ${res.status}`;
+        } catch {
+          message = `HTTP ${res.status}`;
+        }
+
+        throw new Error(message);
+      }
+
+      const data = await res.json();
+
+      if (data.error) {
+        throw new Error(data.error?.errors?.[0]?.message ?? `HTTP ${res.status}`);
+      }
+
+
+      const serviceEnvs = Array.isArray(data.success)
+        ? data.success.filter((e: any) => e.service === service.id)
+        : [];
+      setEnvs(serviceEnvs);
+      // } catch (err: any) {
+      //   setEnvError(err.message || "Request failed");
+      // } finally {
+      //   // setIsSubmitting(false);
+      // }
+    },
+  });
 
   // Filter builds based on search and filters
   useEffect(() => {
@@ -466,12 +527,6 @@ export default function ServiceDetail() {
     return () => window.removeEventListener('resize', adjust);
   }, [tab, jobs.length, jobLogs.length, secrets.length, envs.length, filteredBuilds.length, releaseBuilds.length]);
 
-  const updateSecretEntry = (index: number, field: 'key' | 'value', newValue: string) => {
-    const updated = [...secretEntries];
-    updated[index] = { ...updated[index], [field]: newValue };
-    setSecretEntries(updated);
-  };
-
   const openDeployModal = async () => {
     if (!service?.id || !service.namespace) return;
 
@@ -603,35 +658,12 @@ export default function ServiceDetail() {
     }
   };
 
-  const addSecretEntry = () => {
-    setSecretEntries([...secretEntries, { key: '', value: '' }]);
-  };
-
-  const removeSecretEntry = (index: number) => {
-    setSecretEntries(secretEntries.filter((_, i) => i !== index));
-  };
-
-  const updateEnvEntry = (index: number, field: 'key' | 'value', newValue: string) => {
-    const updated = [...envEntries];
-    updated[index] = { ...updated[index], [field]: newValue };
-    setEnvEntries(updated);
-  };
-
-  const addEnvEntry = () => {
-    setEnvEntries([...envEntries, { key: '', value: '' }]);
-  };
-
-  const removeEnvEntry = (index: number) => {
-    setEnvEntries(envEntries.filter((_, i) => i !== index));
-  };
-
   const getStatusBadgeColor = (status?: string) => {
     if (!status) return 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     if (status === 'DEPLOYED') return 'bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200';
     if (status === 'FAILED') return 'bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200';
     return 'bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
   };
-
 
   return (
     <div>
@@ -740,40 +772,38 @@ export default function ServiceDetail() {
         {tab === 'secret' && (
           <KeyValueEditor
             title="Secrets"
-            versions={secrets.map((s) => ({
-              version: s.id ?? s.version ?? '',
-              publishedAt: s.published_at,
-              value: s.value ?? {},
-            }))}
-            selectedVersionIndex={selectedSecretVersionIndex}
-            onSelectVersion={setSelectedSecretVersionIndex}
-            format={secretFormat}
-            onFormatChange={setSecretFormat}
-            entries={secretEntries}
-            onUpdateEntry={updateSecretEntry}
-            onAddEntry={addSecretEntry}
-            onRemoveEntry={removeSecretEntry}
+            versions={secretResource.versions}
+            selectedVersionIndex={secretResource.selectedVersionIndex}
+            onSelectVersion={secretResource.selectVersion}
+            format={secretResource.format}
+            onFormatChange={secretResource.setFormat}
+            entries={secretResource.entries}
+            onUpdateEntry={secretResource.updateEntry}
+            onAddEntry={secretResource.addEntry}
+            onRemoveEntry={secretResource.removeEntry}
+            onSubmit={secretResource.submit}
+            isSubmitting={secretResource.isSubmitting}
             emptyMessage="No secrets found for this service"
+            error={secretResource.error}
           />
         )}
 
         {tab === 'env' && (
           <KeyValueEditor
             title="Environment Variables"
-            versions={envs.map((e) => ({
-              version: e.id ?? e.version ?? '',
-              publishedAt: e.published_at,
-              value: e.value ?? {},
-            }))}
-            selectedVersionIndex={selectedEnvVersionIndex}
-            onSelectVersion={setSelectedEnvVersionIndex}
-            format={envFormat}
-            onFormatChange={setEnvFormat}
-            entries={envEntries}
-            onUpdateEntry={updateEnvEntry}
-            onAddEntry={addEnvEntry}
-            onRemoveEntry={removeEnvEntry}
+            versions={envResource.versions}
+            selectedVersionIndex={envResource.selectedVersionIndex}
+            onSelectVersion={envResource.selectVersion}
+            format={envResource.format}
+            onFormatChange={envResource.setFormat}
+            entries={envResource.entries}
+            onUpdateEntry={envResource.updateEntry}
+            onAddEntry={envResource.addEntry}
+            onRemoveEntry={envResource.removeEntry}
+            onSubmit={envResource.submit}
+            isSubmitting={envResource.isSubmitting}
             emptyMessage="No environment variables found for this service"
+            error={envResource.error}
           />
         )}
       </div>

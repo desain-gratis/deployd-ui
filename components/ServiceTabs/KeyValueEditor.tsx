@@ -1,44 +1,56 @@
 /* eslint-disable no-unused-vars */
-import React from 'react';
-import YAML from 'js-yaml';
-import { formatRelativeTime, formatLocalDateTime } from '../../lib/time';
+import React, { useMemo } from "react";
+import YAML from "js-yaml";
+import {
+  formatRelativeTime,
+  formatLocalDateTime,
+} from "../../lib/time";
+import { KV } from "../../types/service";
 
-export type KeyValueEntry<V = string> = {
-  key: string;
-  value: V;
-};
+export type DataFormat = "kv" | "json" | "yaml";
 
-export type DataFormat = 'kv' | 'json' | 'yaml';
 
-type VersionedValue<T> = {
-  version: string | number;
-  publishedAt?: string;
-  value: T;
-};
+type SubmitMode = "update" | "revert";
 
-type Props<T extends Record<string, any> = Record<string, any>> = {
+type Props = {
   title?: string;
 
-  versions?: VersionedValue<T>[];
+  versions?: KV[];
   selectedVersionIndex?: number;
   onSelectVersion?: (index: number) => void;
 
   format: DataFormat;
   onFormatChange: (format: DataFormat) => void;
 
-  entries: KeyValueEntry[];
-  onUpdateEntry: (index: number, field: 'key' | 'value', value: any) => void;
+  entries: Record<string, any>[];
+  onUpdateEntry: (
+    index: number,
+    field: "key" | "value",
+    value: any
+  ) => void;
   onAddEntry: () => void;
   onRemoveEntry: (index: number) => void;
 
   emptyMessage?: string;
+
+  onSubmit?: (payload: {
+    value: Record<string, any>;
+    mode: SubmitMode;
+  }) => void;
+
+  isSubmitting?: boolean;
+  error?: string | null;
 };
 
-const flatToNested = (flatObj: Record<string, any>): Record<string, any> => {
+const flatToNested = (
+  flatObj: Record<string, any>
+): Record<string, any> => {
   const result: Record<string, any> = {};
 
-  for (const [key, value] of Object.entries(flatObj)) {
-    const parts = key.split('.');
+  for (const [key, value] of Object.entries(
+    flatObj
+  )) {
+    const parts = key.split(".");
     let current = result;
 
     for (let i = 0; i < parts.length - 1; i++) {
@@ -54,10 +66,8 @@ const flatToNested = (flatObj: Record<string, any>): Record<string, any> => {
   return result;
 };
 
-export default function KeyValueEditor<
-  T extends Record<string, any> = Record<string, any>
->({
-  title = 'Key Value Editor',
+export default function KeyValueEditor({
+  title = "Key Value Editor",
   versions = [],
   selectedVersionIndex = 0,
   onSelectVersion,
@@ -67,13 +77,75 @@ export default function KeyValueEditor<
   onUpdateEntry,
   onAddEntry,
   onRemoveEntry,
-  emptyMessage = 'No data available',
-}: Props<T>) {
+  emptyMessage = "No data available",
+  onSubmit,
+  isSubmitting = false,
+  error,
+}: Props) {
   const selectedVersion = versions[selectedVersionIndex];
+  const latestVersion = versions[0];
+
+  const selectedValue = selectedVersion?.value ?? {};
+  const latestValue = latestVersion?.value ?? {};
+
+  const currentValue = useMemo(() => {
+    return entries.reduce<Record<string, any>>(
+      (acc, e) => {
+        if (e.key) acc[e.key] = e.value;
+        return acc;
+      },
+      {}
+    );
+  }, [entries]);
+
+  const isLatestSelected =
+    selectedVersionIndex === 0;
+
+  const isEdited = useMemo(() => {
+    return (
+      JSON.stringify(currentValue) !==
+      JSON.stringify(selectedValue)
+    );
+  }, [currentValue, selectedValue]);
+
+  const isSameAsLatest = useMemo(() => {
+    return (
+      JSON.stringify(currentValue) ===
+      JSON.stringify(latestValue)
+    );
+  }, [currentValue, latestValue]);
+
+  let submitMode: SubmitMode | null = null;
+
+  if (isEdited) {
+    submitMode = "update";
+  } else if (!isLatestSelected && !isSameAsLatest) {
+    submitMode = "revert";
+  }
+
+  const hasChanges = submitMode !== null;
+  const isReverting = submitMode === "revert";
+
+  const handleSubmit = () => {
+    if (!onSubmit || !submitMode) return;
+
+    onSubmit({
+      value: currentValue,
+      mode: submitMode,
+    });
+  };
 
   return (
     <div>
-      <h3 className="text-lg font-medium mb-4">{title}</h3>
+      <h3 className="text-lg font-medium mb-4">
+        {title}
+      </h3>
+
+      {error && (
+        <div className="mb-4 text-sm text-red-600 dark:text-red-400">
+          {error}
+        </div>
+      )}
 
       {versions.length > 0 ? (
         <div className="space-y-4">
@@ -88,21 +160,29 @@ export default function KeyValueEditor<
                   <select
                     value={selectedVersionIndex}
                     onChange={(e) =>
-                      onSelectVersion(Number(e.target.value))
+                      onSelectVersion(
+                        Number(e.target.value)
+                      )
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm"
                   >
                     {versions.map((v, idx) => (
                       <option key={idx} value={idx}>
                         Version {v.version}
-                        {v.publishedAt ? (
+                        {v.published_at && (
                           <>
-                            {' '}
-                            (published{' '}
-                            {formatRelativeTime(v.publishedAt)} ·{' '}
-                            {formatLocalDateTime(v.publishedAt)})
+                            {" "}
+                            (published{" "}
+                            {formatRelativeTime(
+                              v.published_at
+                            )}{" "}
+                            ·{" "}
+                            {formatLocalDateTime(
+                              v.published_at
+                            )}
+                            )
                           </>
-                        ) : null}
+                        )}
                       </option>
                     ))}
                   </select>
@@ -116,115 +196,174 @@ export default function KeyValueEditor<
                 <select
                   value={format}
                   onChange={(e) =>
-                    onFormatChange(e.target.value as DataFormat)
+                    onFormatChange(
+                      e.target.value as DataFormat
+                    )
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm"
                 >
-                  <option value="kv">Key-Value</option>
+                  <option value="kv">
+                    Key-Value
+                  </option>
                   <option value="json">JSON</option>
                   <option value="yaml">YAML</option>
                 </select>
               </div>
             </div>
+          </div>
 
-            {/* Content */}
-            <div className="p-3 rounded bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 overflow-auto max-h-[400px]">
-              {format === 'kv' && (
-                <div>
-                  <table className="w-full text-sm border-collapse">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left px-2 py-2 font-medium">
-                          Key
-                        </th>
-                        <th className="text-left px-2 py-2 font-medium">
-                          Value
-                        </th>
-                        <th className="text-center px-2 py-2 font-medium w-20">
-                          Action
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {entries.map((entry, idx) => (
-                        <tr key={idx} className="border-b">
-                          <td className="px-2 py-2">
+          {/* Content */}
+          {format === "kv" && (
+            <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+              <div className="overflow-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 dark:bg-gray-800/60">
+                    <tr className="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      <th className="px-4 py-3 font-medium">Key</th>
+                      <th className="px-4 py-3 font-medium">Value</th>
+                      <th className="px-4 py-3 font-medium text-right w-24">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    {entries.length > 0 ? (
+                      entries.map((entry, idx) => (
+                        <tr
+                          key={idx}
+                          className={`
+                  transition-colors
+                  ${idx % 2 === 0
+                              ? "bg-white dark:bg-gray-900"
+                              : "bg-gray-50/40 dark:bg-gray-900/40"
+                            }
+                  hover:bg-gray-100/70 dark:hover:bg-gray-800/60
+                `}
+                        >
+                          <td className="px-4 py-3 align-middle">
                             <input
                               type="text"
                               value={entry.key}
                               onChange={(e) =>
-                                onUpdateEntry(
-                                  idx,
-                                  'key',
-                                  e.target.value
-                                )
+                                onUpdateEntry(idx, "key", e.target.value)
                               }
-                              className="w-full px-2 py-1 border border-gray-300 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-sm"
-                              placeholder="Enter key"
+                              className="w-full bg-transparent border-none outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400"
+                              placeholder="KEY_NAME"
                             />
                           </td>
-                          <td className="px-2 py-2">
+
+                          <td className="px-4 py-3 align-middle">
                             <input
                               type="text"
-                              value={String(entry.value ?? '')}
+                              value={String(entry.value ?? "")}
                               onChange={(e) =>
                                 onUpdateEntry(
                                   idx,
-                                  'value',
+                                  "value",
                                   e.target.value
                                 )
                               }
-                              className="w-full px-2 py-1 border border-gray-300 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-sm"
-                              placeholder="Enter value"
+                              className="w-full bg-transparent border-none outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400"
+                              placeholder="Value"
                             />
                           </td>
-                          <td className="px-2 py-2 text-center">
+
+                          <td className="px-4 py-3 align-middle text-right">
                             <button
                               onClick={() => onRemoveEntry(idx)}
-                              className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                              className="text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
                             >
                               Remove
                             </button>
                           </td>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={3}
+                          className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+                        >
+                          No key-value entries
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-                  <button
-                    onClick={onAddEntry}
-                    className="mt-3 px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                  >
-                    + Add Entry
-                  </button>
-                </div>
-              )}
-
-              {format === 'json' && (
-                <pre className="text-xs text-gray-700 dark:text-gray-300">
-                  {JSON.stringify(
-                    selectedVersion?.value ?? {},
-                    null,
-                    2
-                  )}
-                </pre>
-              )}
-
-              {format === 'yaml' && (
-                <pre className="text-xs text-gray-700 dark:text-gray-300">
-                  {YAML.dump(
-                    flatToNested(selectedVersion?.value ?? {})
-                  )}
-                </pre>
-              )}
+              <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800">
+                <button
+                  onClick={onAddEntry}
+                  className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                >
+                  + Add Entry
+                </button>
+              </div>
             </div>
-          </div>
+          )}
+
+
+          {format === "json" && (
+            <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+              <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 font-medium">
+                  JSON View
+                </span>
+              </div>
+
+              <div className="overflow-auto max-h-[400px]">
+                <pre className="px-4 py-4 text-xs font-mono leading-relaxed text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+                  {JSON.stringify(currentValue, null, 2)}
+                </pre>
+              </div>
+            </div>
+          )}
+
+          {format === "yaml" && (
+            <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+              <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 font-medium">
+                  YAML View
+                </span>
+              </div>
+
+              <div className="overflow-auto max-h-[400px]">
+                <pre className="px-4 py-4 text-xs font-mono leading-relaxed text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+                  {YAML.dump(flatToNested(currentValue))}
+                </pre>
+              </div>
+            </div>
+          )}
+
         </div>
       ) : (
         <div className="p-4 rounded bg-gray-50 dark:bg-gray-800 text-center text-gray-600 dark:text-gray-400">
           {emptyMessage}
         </div>
       )}
+
+      {/* Submit Button */}
+      <div className="mt-4 flex justify-end">
+        <button
+          onClick={handleSubmit}
+          disabled={!hasChanges || isSubmitting}
+          className={`
+            px-4 py-2 rounded text-sm font-medium
+            ${!hasChanges
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-blue-600 text-white hover:bg-blue-700"
+            }
+          `}
+        >
+          {isSubmitting
+            ? "Updating..."
+            : isReverting
+              ? "Revert to this version"
+              : "Update"}
+        </button>
+      </div>
     </div>
   );
 }
