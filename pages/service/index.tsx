@@ -16,6 +16,8 @@ import { Service, KV, ServiceJob, Build } from '../../types/service';
 import KeyValueEditor from '../../components/ServiceTabs/KeyValueEditor';
 import { truncateCommit } from '../../components/ServiceTabs/ReleasesTable';
 import { useVersionedKeyValueResource } from '../../src/hooks/resources/useVersionedKeyValueResource';
+import { useVersionedRoutingResource } from '../../src/hooks/resources/useVersionedRoutingResource';
+import RoutingTab from '../../components/ServiceTabs/RoutingTab';
 
 
 export default function ServiceDetail() {
@@ -28,6 +30,7 @@ export default function ServiceDetail() {
 
   const [secrets, setSecrets] = useState<KV[]>([]);
   const [envs, setEnvs] = useState<KV[]>([]);
+  const [routings, setRoutings] = useState<any[]>([]); // todo not any
   const [jobs, setJobs] = useState<ServiceJob[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,6 +137,24 @@ export default function ServiceDetail() {
       }
     };
 
+    const fetchRoutings = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/routing`, {
+          headers: { 'X-Namespace': namespace }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!mounted) return;
+        const routings = Array.isArray(data.success)
+          ? data.success.filter((e: any) => e.service === id)
+          : [];
+        setRoutings(routings);
+      } catch (err: any) {
+        if (mounted) setError(err.message || 'Failed to fetch routings');
+      }
+    };
+
+
     const fetchJobs = async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/job`, {
@@ -172,6 +193,7 @@ export default function ServiceDetail() {
 
     fetchSecrets();
     fetchEnvs();
+    fetchRoutings();
     fetchJobs();
     fetchLastSuccessfulJob();
 
@@ -242,7 +264,7 @@ export default function ServiceDetail() {
     setSuggestedReleaseIndex(newBuild ? latestBuildIndex : null);
     setSuggestedEnvIndex(newEnv ? latestEnvIndex : null);
     setSuggestedSecretIndex(newSecret ? latestSecretIndex : null);
-  }, [builds, envs, secrets, lastSuccessfulJob, service?.id]);
+  }, [builds, envs, secrets, routings, lastSuccessfulJob, service?.id]);
 
   // Fetch builds when service is available
   useEffect(() => {
@@ -296,6 +318,7 @@ export default function ServiceDetail() {
   const secretResource = useVersionedKeyValueResource({
     endpoint: `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/secret`,
     namespace: service?.namespace || 'deployd',
+    service: service?.id!,
     initialVersions: secrets,
     refetch: async () => {
       if (!service?.namespace) return;
@@ -341,6 +364,7 @@ export default function ServiceDetail() {
   const envResource = useVersionedKeyValueResource({
     endpoint: `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/env`,
     namespace: service?.namespace || 'deployd',
+    service: service?.id!,
     initialVersions: envs,
     refetch: async () => {
       if (!service?.namespace) return;
@@ -383,6 +407,49 @@ export default function ServiceDetail() {
       // } finally {
       //   // setIsSubmitting(false);
       // }
+    },
+  });
+
+  const routingResource = useVersionedRoutingResource({
+    endpoint: `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/routing`,
+    namespace: service?.namespace || 'deployd',
+    service: service?.id!,
+    initialVersions: routings,
+    refetch: async () => {
+      if (!service?.namespace) return;
+
+      // try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/routing`,
+        { headers: { 'X-Namespace': service.namespace } }
+      );
+
+      if (!res.ok) {
+        let message = "Unknown error";
+
+        try {
+          const data = await res.json();
+
+          message =
+            data?.error?.errors?.[0]?.message ??
+            `HTTP ${res.status}`;
+        } catch {
+          message = `HTTP ${res.status}`;
+        }
+
+        throw new Error(message);
+      }
+
+      const data = await res.json();
+
+      if (data.error) {
+        throw new Error(data.error?.errors?.[0]?.message ?? `HTTP ${res.status}`);
+      }
+
+      const routingConfigs = Array.isArray(data.success)
+        ? data.success.filter((e: any) => e.service === service.id) // TODO: use BE
+        : [];
+      setRoutings(routingConfigs);
     },
   });
 
@@ -620,7 +687,8 @@ export default function ServiceDetail() {
           }
         },
         timeout_seconds: 900,
-        is_believe: true
+        is_believe: true,
+        routing_version: 0,
       };
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/submit-job`, {
@@ -639,7 +707,7 @@ export default function ServiceDetail() {
 
       const data = await res.json();
       setDeploySuccess(true);
-      setDeploySuccessMessage(`Deployment job submitted successfully. Job ID: ${data.success?.job?.id || 'Unknown'}`);
+      setDeploySuccessMessage(`Job ID: ${data.success?.job?.id || 'Unknown'}`);
       setShowDeployModal(false);
 
       if (data.success) {
@@ -717,7 +785,7 @@ export default function ServiceDetail() {
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
-        {['deployment', 'releases', 'job-log', 'secret', 'env'].map((t) => (
+        {['deployment', 'releases', 'env', 'secret', 'routing', 'job-log'].map((t) => (
           <button
             key={t}
             onClick={() => {
@@ -769,6 +837,26 @@ export default function ServiceDetail() {
           />
         )}
 
+        {tab === 'env' && (
+          <KeyValueEditor
+            title="Environment Variables"
+            versions={envResource.versions}
+            selectedVersionIndex={envResource.selectedVersionIndex}
+            onSelectVersion={envResource.selectVersion}
+            format={envResource.format}
+            onFormatChange={envResource.setFormat}
+            entries={envResource.entries}
+            onUpdateEntry={envResource.updateEntry}
+            onAddEntry={envResource.addEntry}
+            onRemoveEntry={envResource.removeEntry}
+            onSubmit={envResource.submit}
+            isSubmitting={envResource.isSubmitting}
+            emptyMessage="No environment variables found for this service"
+            error={envResource.error}
+          />
+        )}
+
+
         {tab === 'secret' && (
           <KeyValueEditor
             title="Secrets"
@@ -788,22 +876,15 @@ export default function ServiceDetail() {
           />
         )}
 
-        {tab === 'env' && (
-          <KeyValueEditor
-            title="Environment Variables"
-            versions={envResource.versions}
-            selectedVersionIndex={envResource.selectedVersionIndex}
-            onSelectVersion={envResource.selectVersion}
-            format={envResource.format}
-            onFormatChange={envResource.setFormat}
-            entries={envResource.entries}
-            onUpdateEntry={envResource.updateEntry}
-            onAddEntry={envResource.addEntry}
-            onRemoveEntry={envResource.removeEntry}
-            onSubmit={envResource.submit}
-            isSubmitting={envResource.isSubmitting}
-            emptyMessage="No environment variables found for this service"
-            error={envResource.error}
+        {tab === 'routing' && (
+          <RoutingTab
+            versions={routingResource.versions}
+            selectedVersionIndex={routingResource.selectedVersionIndex}
+            onSelectVersion={routingResource.selectVersion}
+            config={routingResource}
+            onSubmit={routingResource.submit}
+            isSubmitting={routingResource.isSubmitting}
+            error={routingResource.error}
           />
         )}
       </div>
@@ -817,8 +898,43 @@ export default function ServiceDetail() {
 
       {/* Deploy Success Toast */}
       {deploySuccess && (
-        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-3 rounded shadow-lg text-sm max-w-sm">
-          {deploySuccessMessage}
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-3 fade-in duration-300">
+          <div className="
+      flex items-start gap-3
+      max-w-sm
+      px-4 py-3
+      rounded-xl
+      shadow-lg
+      border
+      bg-gray-900/95 dark:bg-gray-900/95
+      border-gray-800
+      backdrop-blur
+    ">
+
+            {/* Icon */}
+            <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-green-900/40">
+              <svg
+                className="w-4 h-4 text-green-400"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+
+            {/* Text */}
+            <div className="text-sm leading-snug">
+              <div className="font-semibold text-gray-100">
+                Deployment submitted
+              </div>
+              <div className="text-gray-400">
+                {deploySuccessMessage}
+              </div>
+            </div>
+
+          </div>
         </div>
       )}
 
