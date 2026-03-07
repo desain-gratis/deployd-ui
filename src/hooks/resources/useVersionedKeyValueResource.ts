@@ -8,6 +8,7 @@ type SubmitMode = "update" | "revert";
 type Options = {
     endpoint: string;
     namespace: string;
+    service: string;
     initialVersions: KV[];
     refetch: () => Promise<void>;
 };
@@ -15,6 +16,7 @@ type Options = {
 export function useVersionedKeyValueResource({
     endpoint,
     namespace,
+    service,
     initialVersions,
     refetch,
 }: Options) {
@@ -102,6 +104,8 @@ export function useVersionedKeyValueResource({
 
             const body = {
                 ...latestVersion,
+                namespace: namespace,
+                service: service,
                 version: undefined,
                 value: {
                     ...currentValue,
