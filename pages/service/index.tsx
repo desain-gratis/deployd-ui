@@ -784,24 +784,26 @@ export default function ServiceDetail() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
-        {['deployment', 'releases', 'env', 'secret', 'routing', 'job-log'].map((t) => (
-          <button
-            key={t}
-            onClick={() => {
-              const params = new URLSearchParams();
-              id && params.set('id', id);
-              t && params.set('tab', t);
-              router.push("/service?" + params.toString(), undefined, { shallow: true });
-            }}
-            className={`px-4 py-2 font-medium text-sm ${(tab ? tab === t : 'deployment' === t)
-              ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-              }`}
-          >
-            {t === 'job-log' ? 'Job Log' : t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
+      <div className="mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto [-webkit-overflow-scrolling:touch]">
+        <div className="flex gap-2 whitespace-nowrap min-w-max">
+          {['deployment', 'releases', 'env', 'secret', 'routing', 'job-log'].map((t) => (
+            <button
+              key={t}
+              onClick={() => {
+                const params = new URLSearchParams();
+                id && params.set('id', id);
+                t && params.set('tab', t);
+                router.push("/service?" + params.toString(), undefined, { shallow: true });
+              }}
+              className={`flex-shrink-0 px-4 py-2 font-medium text-sm ${(tab ? tab === t : 'deployment' === t)
+                ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+            >
+              {t === 'job-log' ? 'Job Log' : t.charAt(0).toUpperCase() + t.slice(1)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Home tab removed */}
