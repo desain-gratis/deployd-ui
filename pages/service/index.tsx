@@ -217,6 +217,7 @@ export default function ServiceDetail() {
 
   useEffect(() => {
     if (!service?.id || !lastSuccessfulJob) return;
+    if (!builds.length || !envs.length || !secrets.length) return;
 
     const req = lastSuccessfulJob.request as any;
     const reqBuild = Number(req?.build_version ?? NaN);
@@ -232,16 +233,18 @@ export default function ServiceDetail() {
     }, 0);
 
     const latestEnvIndex = envs.reduce((best, e, idx) => {
-      const v = Number(e.id ?? NaN);
-      const bestV = Number(envs[best]?.id ?? NaN);
+      const v = Number(e.version);
+      const bestV = Number(envs[best]?.version);
+
       if (isNaN(bestV)) return idx;
       if (isNaN(v)) return best;
       return v > bestV ? idx : best;
     }, 0);
 
     const latestSecretIndex = secrets.reduce((best, s, idx) => {
-      const v = Number(s.id ?? NaN);
-      const bestV = Number(secrets[best]?.id ?? NaN);
+      const v = Number(s.version ?? NaN);
+      const bestV = Number(secrets[best]?.version ?? NaN);
+
       if (isNaN(bestV)) return idx;
       if (isNaN(v)) return best;
       return v > bestV ? idx : best;
@@ -249,9 +252,8 @@ export default function ServiceDetail() {
 
     const latestBuildVersion = Number(builds[latestBuildIndex]?.id ?? NaN);
     const latestBuild = builds[latestBuildIndex];
-    const latestEnvVersion = Number(envs[latestEnvIndex]?.id ?? NaN);
-    const latestSecretVersion = Number(secrets[latestSecretIndex]?.id ?? NaN);
-
+    const latestEnvVersion = Number(envs[latestEnvIndex]?.version ?? NaN);
+    const latestSecretVersion = Number(secrets[latestSecretIndex]?.version ?? NaN);
 
     setLatestBuild(latestBuild);
     setLatestBuildVersion(isNaN(latestBuildVersion) ? null : latestBuildVersion);

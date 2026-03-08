@@ -52,9 +52,9 @@ export default function ServiceHeaderCard({
     current?: number | null,
     latest?: number | null
   ) => {
-    if (!latest) return "-";
+    if (latest === null || latest === undefined) return "-";
 
-    if (!current) {
+    if (current === null || current === undefined) {
       return <span className="text-amber-600">Not deployed</span>;
     }
 
