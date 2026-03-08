@@ -72,7 +72,8 @@ export default function ServiceDetail() {
   const [jobLogs, setJobLogs] = useState<Array<{ message: any; timestamp: string }>>([]);
   const [deploySuccess, setDeploySuccess] = useState(false);
   const [deploySuccessMessage, setDeploySuccessMessage] = useState('');
-
+  const [deployFailed, setDeployFailed] = useState(false);
+  const [deployFailedMessage, setDeployFailedMessage] = useState('');
 
 
   const [shards, setShards] = useState<ShardForm[]>([])
@@ -782,6 +783,10 @@ export default function ServiceDetail() {
       setDeploySuccessMessage(`Job ID: ${data.success?.job?.id || 'Unknown'}`);
       setShowDeployModal(false);
 
+      if (!data.sucesss) {
+        if (!res.ok) throw new Error(`${data.error}`);
+      }
+
       if (data.success) {
         const job = data.success.job
         setJobs((prev) => {
@@ -792,7 +797,15 @@ export default function ServiceDetail() {
       // Auto-dismiss after 5 seconds
       setTimeout(() => setDeploySuccess(false), 5000);
     } catch (err: any) {
-      setDeployError(err?.message || 'Failed to submit deploy job');
+      const message = err?.message || 'Failed to submit deploy job';
+
+      setDeployError(message);
+
+      setDeployFailed(true);
+      setDeployFailedMessage(message);
+
+      // Auto dismiss
+      setTimeout(() => setDeployFailed(false), 5000);
     } finally {
       setReleaseLoading(false);
     }
@@ -1008,6 +1021,45 @@ export default function ServiceDetail() {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {deployFailed && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-3 fade-in duration-300">
+          <div
+            className="
+        flex items-start gap-3
+        max-w-sm
+        px-4 py-3
+        rounded-xl
+        shadow-lg
+        border
+        bg-red-900/90
+        border-red-800
+        backdrop-blur
+      "
+          >
+            <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-red-900/40">
+              <svg
+                className="w-4 h-4 text-red-400"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+
+            <div className="text-sm leading-snug">
+              <div className="font-semibold text-white">
+                Deployment failed
+              </div>
+              <div className="text-red-200">
+                {deployFailedMessage}
+              </div>
+            </div>
           </div>
         </div>
       )}
