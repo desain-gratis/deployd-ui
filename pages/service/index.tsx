@@ -562,6 +562,17 @@ export default function ServiceDetail() {
             // Update header if deployment succeeded
             if (job.status === "DEPLOYED") {
               setLastSuccessfulJob(job);
+
+              // TODO REFACTOR THIS GPT
+              const s = Object.entries(job.raft_config?.shards)
+                .map(([index, shard]: any) => ({
+                  shard_id: Number(index),
+                  id: shard.id,
+                  type: shard.type,
+                  description: shard.description
+                }))
+
+              setShards({ ...s })
             }
 
           } catch (err) {
@@ -650,14 +661,17 @@ export default function ServiceDetail() {
 
 
     // for successful job, we use the value in raft_config, instead of request
-    if (lastSuccessfulJob?.raft_config?.shards) {
-      const s = Object.entries(lastSuccessfulJob.raft_config?.shards)
-        .map(([index, shard]: any) => ({
-          shard_id: Number(index),
-          id: shard.id,
-          type: shard.type,
-          description: shard.description
-        }))
+    const shardSource =
+      lastSuccessfulJob?.raft_config?.shards ??
+      lastSuccessfulJob?.request?.raft_shard
+
+    if (shardSource) {
+      const s = Object.entries(shardSource).map(([index, shard]: any) => ({
+        shard_id: Number(index),
+        id: shard.id,
+        type: shard.type,
+        description: shard.description,
+      }))
 
       setShards(s)
     } else {
