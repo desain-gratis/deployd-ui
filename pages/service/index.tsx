@@ -12,12 +12,20 @@ import { useNamespace } from '../../context/NamespaceContext';
 import Modal from '../../components/Modal';
 import { formatRelativeTime } from '../../lib/time';
 import ServiceHeaderCard from '../../components/ServiceDetail/ServiceHeaderCard';
-import { Service, KV, ServiceJob, Build } from '../../types/service';
+import { Service, KV, ServiceJob, Build, RaftShardConfig } from '../../types/service';
 import KeyValueEditor from '../../components/ServiceTabs/KeyValueEditor';
 import { truncateCommit } from '../../components/ServiceTabs/ReleasesTable';
 import { useVersionedKeyValueResource } from '../../src/hooks/resources/useVersionedKeyValueResource';
 import { useVersionedRoutingResource } from '../../src/hooks/resources/useVersionedRoutingResource';
 import RoutingTab from '../../components/ServiceTabs/RoutingTab';
+
+
+type ShardForm = {
+  id: string      // actual raft numeric index (non editable)
+  shard_id: number   // user editable string
+  type: string
+  description: string
+}
 
 
 export default function ServiceDetail() {
@@ -64,6 +72,10 @@ export default function ServiceDetail() {
   const [jobLogs, setJobLogs] = useState<Array<{ message: any; timestamp: string }>>([]);
   const [deploySuccess, setDeploySuccess] = useState(false);
   const [deploySuccessMessage, setDeploySuccessMessage] = useState('');
+
+
+
+  const [shards, setShards] = useState<ShardForm[]>([])
 
   useEffect(() => {
     if (!id) return;
@@ -594,8 +606,54 @@ export default function ServiceDetail() {
     return () => window.removeEventListener('resize', adjust);
   }, [tab, jobs.length, jobLogs.length, secrets.length, envs.length, filteredBuilds.length, releaseBuilds.length]);
 
+
+  const addShard = () => {
+    const nextIndex =
+      shards.length > 0
+        ? Math.max(...shards.map(s => s.shard_id)) + 1
+        : 1
+
+    setShards([
+      ...shards,
+      {
+        shard_id: nextIndex,
+        id: `shard-${nextIndex}`,
+        type: "",
+        description: "",
+      }
+    ])
+  }
+
+  const removeShard = (shard_id: number) => {
+    setShards(prev => prev.filter(s => s.shard_id !== shard_id))
+  }
+
+  const updateShard = (shard_id: number, field: string, value: any) => {
+    setShards(prev =>
+      prev.map(s =>
+        s.shard_id === shard_id ? { ...s, [field]: value } : s
+      )
+    )
+  }
+
   const openDeployModal = async () => {
     if (!service?.id || !service.namespace) return;
+
+
+    if (lastSuccessfulJob?.request?.raft_replica) {
+      const s = Object.entries(lastSuccessfulJob.request.raft_replica)
+        .map(([index, shard]: any) => ({
+          shard_id: Number(index),
+          id: shard.id,
+          type: shard.type,
+          description: shard.description
+        }))
+
+      setShards(s)
+    } else {
+      setShards([])
+    }
+
 
     setDeployError(null);
     setReleaseLoading(true);
@@ -670,6 +728,17 @@ export default function ServiceDetail() {
 
       const payloadNamespace = service?.namespace || 'deployd';
 
+      const raft_shard: Record<number, RaftShardConfig> = {}
+
+      shards.forEach(r => {
+        raft_shard[r.shard_id] = {
+          description: r.description,
+          type: r.type,
+          id: r.id,
+          shard_id: r.shard_id
+        }
+      })
+
       const payload: any = {
         namespace: payloadNamespace,
         service: { id: id },
@@ -679,13 +748,9 @@ export default function ServiceDetail() {
         raft_config_version: 0,
         raft_config_replica_version: 0,
         target_hosts,
-        raft_replica: {
-          '0': {
-            id: `auto-replica-${Date.now()}`,
-            description: 'Auto replica',
-            type: 'auto'
-          }
-        },
+
+        raft_shard,
+
         timeout_seconds: 900,
         is_believe: true,
         routing_version: 0,
@@ -1017,6 +1082,76 @@ export default function ServiceDetail() {
               )}
             </div>
 
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium">Raft Shards</label>
+
+                <button
+                  onClick={addShard}
+                  className="text-xs px-2 py-1 rounded bg-gray-700 text-white"
+                >
+                  Add Shard
+                </button>
+              </div>
+
+              <div className="space-y-2">
+
+                {shards.map((shard) => (
+                  <div
+                    key={shard.shard_id}
+                    className="grid grid-cols-3 gap-2 p-3 border border-gray-700 rounded"
+                  >
+
+                    {/* Non-editable index/Shard ID */}
+                    <div>
+                      <label className="text-xs">Shard ID</label>
+                      <input
+                        type="number"
+                        value={shard.shard_id}
+                        // disabled
+                        onChange={(e) =>
+                          updateShard(shard.shard_id, "shard_id", Number(e.target.value))
+                        }
+                        className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded"
+                      />
+                    </div>
+
+                    {/* ID */}
+                    <div>
+                      <label className="text-xs">ID</label>
+                      <input
+                        value={shard.id}
+                        onChange={(e) =>
+                          updateShard(shard.shard_id, "id", e.target.value)
+                        }
+                        className="w-full px-2 py-1 bg-gray-900 border border-gray-700 rounded"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="text-xs">Description</label>
+                      <input
+                        value={shard.description}
+                        onChange={(e) =>
+                          updateShard(shard.shard_id, "description", e.target.value)
+                        }
+                        className="w-full px-2 py-1 bg-gray-900 border border-gray-700 rounded"
+                      />
+                    </div>
+
+                    <button
+                      onClick={() => removeShard(shard.shard_id)}
+                      className="text-xs text-red-400 hover:text-red-300"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+
+              </div>
+            </div>
+
             <div className="flex gap-2 justify-end mt-2">
               <button onClick={() => setShowDeployModal(false)} className="px-3 py-2 bg-gray-600 rounded text-sm">Cancel</button>
               <button onClick={handleDeploy} className="px-3 py-2 bg-indigo-600 text-white rounded text-sm">Deploy</button>
@@ -1040,19 +1175,20 @@ function addJob(prev: ServiceJob[], job: ServiceJob) {
     const allHosts = new Set([...configureHosts, ...restartHosts]);
 
     if (allHosts.size > 0) {
-      reconstructedTarget = Array.from(allHosts).map((host) => ({
-        host,
-        configure_host_job: {
-          status: {
-            [host]: job.configure_host_job?.status?.[host],
-          },
-        },
-        restart_service_job: {
-          status: {
-            [host]: job.restart_service_job?.status?.[host],
-          },
-        },
-      }));
+      reconstructedTarget = Array.from(allHosts).map((host) => {
+        const configureStatus = job.configure_host_job?.status?.[host]
+        const restartStatus = job.restart_service_job?.status?.[host]
+
+        return {
+          host,
+          configure_host_job: configureStatus
+            ? { status: { [host]: configureStatus } }
+            : undefined,
+          restart_service_job: restartStatus
+            ? { status: { [host]: restartStatus } }
+            : undefined,
+        }
+      })
     }
 
     // Deep merge the new job data with existing to preserve all fields
