@@ -1084,72 +1084,129 @@ export default function ServiceDetail() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-3">
                 <label className="text-sm font-medium">Raft Shards</label>
 
                 <button
                   onClick={addShard}
-                  className="text-xs px-2 py-1 rounded bg-gray-700 text-white"
+                  className="
+        px-2.5 py-1.5
+        text-xs font-medium
+        rounded-md
+        border border-gray-300 dark:border-gray-700
+        bg-white dark:bg-gray-900
+        hover:bg-gray-50 dark:hover:bg-gray-800
+      "
                 >
-                  Add Shard
+                  + Add Shard
                 </button>
               </div>
 
-              <div className="space-y-2">
+              {shards.length === 0 && (
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  No shards configured.
+                </div>
+              )}
 
+              <div className="space-y-3">
                 {shards.map((shard) => (
                   <div
                     key={shard.shard_id}
-                    className="grid grid-cols-3 gap-2 p-3 border border-gray-700 rounded"
+                    className="
+          p-4
+          rounded-lg
+          border
+          border-gray-200 dark:border-gray-700
+          bg-gray-50 dark:bg-gray-900/40
+        "
                   >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-sm font-semibold">
+                        Shard {shard.shard_id}
+                      </div>
 
-                    {/* Non-editable index/Shard ID */}
-                    <div>
-                      <label className="text-xs">Shard ID</label>
-                      <input
-                        type="number"
-                        value={shard.shard_id}
-                        // disabled
-                        onChange={(e) =>
-                          updateShard(shard.shard_id, "shard_id", Number(e.target.value))
-                        }
-                        className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded"
-                      />
+                      <button
+                        onClick={() => removeShard(shard.shard_id)}
+                        className="
+              text-xs
+              text-red-500
+              hover:text-red-600
+              font-medium
+            "
+                      >
+                        Remove
+                      </button>
                     </div>
 
-                    {/* ID */}
-                    <div>
-                      <label className="text-xs">ID</label>
-                      <input
-                        value={shard.id}
-                        onChange={(e) =>
-                          updateShard(shard.shard_id, "id", e.target.value)
-                        }
-                        className="w-full px-2 py-1 bg-gray-900 border border-gray-700 rounded"
-                      />
-                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
 
-                    {/* Description */}
-                    <div>
-                      <label className="text-xs">Description</label>
-                      <input
-                        value={shard.description}
-                        onChange={(e) =>
-                          updateShard(shard.shard_id, "description", e.target.value)
-                        }
-                        className="w-full px-2 py-1 bg-gray-900 border border-gray-700 rounded"
-                      />
-                    </div>
+                      {/* Shard ID */}
+                      <div>
+                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          Shard ID
+                        </label>
+                        <input
+                          type="number"
+                          value={shard.shard_id}
+                          onChange={(e) =>
+                            updateShard(shard.shard_id, "shard_id", Number(e.target.value))
+                          }
+                          className="
+                w-full
+                px-3 py-2
+                text-sm
+                rounded-md
+                border border-gray-300 dark:border-gray-700
+                bg-white dark:bg-gray-900
+              "
+                        />
+                      </div>
 
-                    <button
-                      onClick={() => removeShard(shard.shard_id)}
-                      className="text-xs text-red-400 hover:text-red-300"
-                    >
-                      Remove
-                    </button>
+                      {/* ID */}
+                      <div>
+                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          ID
+                        </label>
+                        <input
+                          value={shard.id}
+                          onChange={(e) =>
+                            updateShard(shard.shard_id, "id", e.target.value)
+                          }
+                          className="
+                w-full
+                px-3 py-2
+                text-sm
+                rounded-md
+                border border-gray-300 dark:border-gray-700
+                bg-white dark:bg-gray-900
+              "
+                        />
+                      </div>
+
+                      {/* Description */}
+                      <div>
+                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          Description
+                        </label>
+                        <input
+                          value={shard.description}
+                          onChange={(e) =>
+                            updateShard(shard.shard_id, "description", e.target.value)
+                          }
+                          className="
+                w-full
+                px-3 py-2
+                text-sm
+                rounded-md
+                border border-gray-300 dark:border-gray-700
+                bg-white dark:bg-gray-900
+              "
+                        />
+                      </div>
+
+                    </div>
                   </div>
                 ))}
-
               </div>
             </div>
 
