@@ -640,8 +640,9 @@ export default function ServiceDetail() {
     if (!service?.id || !service.namespace) return;
 
 
-    if (lastSuccessfulJob?.request?.raft_replica) {
-      const s = Object.entries(lastSuccessfulJob.request.raft_replica)
+    // for successful job, we use the value in raft_config, instead of request
+    if (lastSuccessfulJob?.raft_config?.shards) {
+      const s = Object.entries(lastSuccessfulJob.raft_config?.shards)
         .map(([index, shard]: any) => ({
           shard_id: Number(index),
           id: shard.id,

@@ -45,6 +45,10 @@ export type ServiceJob = {
         }
     }>
 
+    raft_config?: {
+        shards: Record<number, RaftShardConfig>
+    }
+
     configure_host_job?: {
         status?: Record<string, { status: string }>
     }
@@ -67,7 +71,7 @@ export type SubmitDeploymentJobRequest = {
 
     target_hosts?: Host[]
 
-    raft_replica?: Record<number, RaftShardConfig>
+    raft_shard?: Record<number, RaftShardConfig>
     raft_port: number
     raft_port_mapping?: Record<string, number>
     raft_deployment_id: number
