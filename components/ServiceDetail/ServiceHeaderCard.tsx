@@ -76,7 +76,7 @@ export default function ServiceHeaderCard({
 
   return (
     <div className="mb-6">
-      <div className="p-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 space-y-6">
+      <div className="p-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 space-y-6 min-h-[280px]">
 
         {/* Header */}
         <div className="space-y-1">
@@ -254,7 +254,7 @@ export default function ServiceHeaderCard({
             </div>
           </div>
         ) : (
-          <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-900/20 p-5 space-y-3">
+          <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-900/20 p-5 space-y-3 hidden">
             <div className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
               ✓ All components are up to date
             </div>
