@@ -555,6 +555,12 @@ export default function ServiceDetail() {
             setJobs((prev) => {
               return [...addJob(prev, job)];
             });
+
+            // Update header if deployment succeeded
+            if (job.status === "DEPLOYED") {
+              setLastSuccessfulJob(job);
+            }
+
           } catch (err) {
             console.error('Failed to parse websocket message:', err);
           }
