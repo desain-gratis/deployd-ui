@@ -1179,7 +1179,7 @@ export default function ServiceDetail() {
               )}
 
               <div className="space-y-3">
-                {shards.map((shard) => (
+                {shards?.map((shard) => (
                   <div
                     key={shard.shard_id}
                     className="
