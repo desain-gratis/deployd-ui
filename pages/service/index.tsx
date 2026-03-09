@@ -47,7 +47,7 @@ export default function ServiceDetail() {
   const [releaseBuilds, setReleaseBuilds] = useState<any[]>([]);
   const [releaseLoading, setReleaseLoading] = useState(false);
   const [deployError, setDeployError] = useState<string | null>(null);
-  const [selectedReleaseIndex, setSelectedReleaseIndex] = useState(0);
+  const [selectedBuildVersion, setSelectedBuildVersion] = useState<number | null>(null);
   const [selectedEnvForDeploy, setSelectedEnvForDeploy] = useState(0);
   const [selectedSecretForDeploy, setSelectedSecretForDeploy] = useState(0);
   const [hostsForDeploy, setHostsForDeploy] = useState<string[]>([]);
@@ -709,7 +709,10 @@ export default function ServiceDetail() {
       setHostsForDeploy(hosts);
 
       // Use suggested indices already computed
-      setSelectedReleaseIndex(suggestedReleaseIndex ?? 0);
+      const suggestedBuild =
+        suggestedReleaseIndex != null ? builds[suggestedReleaseIndex] : builds[0];
+
+      setSelectedBuildVersion(Number(suggestedBuild?.id ?? null));
       setSelectedEnvForDeploy(suggestedEnvIndex ?? 0);
       setSelectedSecretForDeploy(suggestedSecretIndex ?? 0);
 
@@ -725,13 +728,10 @@ export default function ServiceDetail() {
     setDeployError(null);
     setReleaseLoading(true);
     try {
-      const selectedBuild = releaseBuilds[selectedReleaseIndex];
       const selectedEnv = envs[selectedEnvForDeploy];
       const selectedSecret = secrets[selectedSecretForDeploy];
 
-      const build_version = selectedBuild && (typeof selectedBuild.id === 'number')
-        ? selectedBuild.id
-        : Number(selectedBuild?.id ?? selectedReleaseIndex) || selectedReleaseIndex;
+      const build_version = Number(selectedBuildVersion);
 
       const secret_version = selectedSecret && (typeof selectedSecret.version === 'number')
         ? selectedSecret.version
@@ -1090,19 +1090,15 @@ export default function ServiceDetail() {
             <div>
               <label className="block text-sm font-medium mb-1">Release Version</label>
               <select
-                value={selectedReleaseIndex}
-                onChange={(e) => setSelectedReleaseIndex(Number(e.target.value))}
+                value={selectedBuildVersion ?? ""}
+                onChange={(e) => setSelectedBuildVersion(Number(e.target.value))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm"
               >
-                {releaseBuilds.length > 0 ? (
-                  releaseBuilds.map((b, idx) => (
-                    <option key={idx} value={idx}>
-                      {b.id ?? b.version ?? JSON.stringify(b)} - {truncateCommit(b.commit_id)}
-                    </option>
-                  ))
-                ) : (
-                  <option value={0}>No builds available</option>
-                )}
+                {releaseBuilds.map((b) => (
+                  <option key={b.id} value={Number(b.id)}>
+                    {b.id} - {truncateCommit(b.commit_id)}
+                  </option>
+                ))}
               </select>
             </div>
 
