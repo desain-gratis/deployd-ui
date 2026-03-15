@@ -192,7 +192,7 @@ export default function ServiceDetail() {
 
     const fetchLastSuccessfulJob = async () => {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/successful-job?service=${id}`,
+        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/successful-job?id=${id}`,
         { headers: { "X-Namespace": service.namespace } }
       );
       const data = await res.json();
