@@ -38,6 +38,7 @@ export default function ServiceDetail() {
 
   const [secrets, setSecrets] = useState<KV[]>([]);
   const [envs, setEnvs] = useState<KV[]>([]);
+  const [selectedRoutingForDeploy, setSelectedRoutingForDeploy] = useState(0);
   const [routings, setRoutings] = useState<any[]>([]); // todo not any
   const [jobs, setJobs] = useState<ServiceJob[]>([]);
   const [loading, setLoading] = useState(false);
@@ -161,6 +162,9 @@ export default function ServiceDetail() {
         const routings = Array.isArray(data.success)
           ? data.success.filter((e: any) => e.service === id)
           : [];
+        if (routings.length > 0) {
+          setSelectedRoutingForDeploy(0);
+        }
         setRoutings(routings);
       } catch (err: any) {
         if (mounted) setError(err.message || 'Failed to fetch routings');
@@ -626,7 +630,6 @@ export default function ServiceDetail() {
     return () => window.removeEventListener('resize', adjust);
   }, [tab, jobs.length, jobLogs.length, secrets.length, envs.length, filteredBuilds.length, releaseBuilds.length]);
 
-
   const addShard = () => {
     const nextIndex =
       shards.length > 0
@@ -715,6 +718,7 @@ export default function ServiceDetail() {
       setSelectedBuildVersion(Number(suggestedBuild?.id ?? null));
       setSelectedEnvForDeploy(suggestedEnvIndex ?? 0);
       setSelectedSecretForDeploy(suggestedSecretIndex ?? 0);
+      // setSelectedRoutingForDeploy(selectedRoutingForDeploy);
 
       setShowDeployModal(true);
     } catch (err: any) {
@@ -730,6 +734,7 @@ export default function ServiceDetail() {
     try {
       const selectedEnv = envs[selectedEnvForDeploy];
       const selectedSecret = secrets[selectedSecretForDeploy];
+      const selectedRouting = routings[selectedRoutingForDeploy];
 
       const build_version = Number(selectedBuildVersion);
 
@@ -740,6 +745,10 @@ export default function ServiceDetail() {
       const env_version = selectedEnv && (typeof selectedEnv.version === 'number')
         ? selectedEnv.version
         : Number(selectedEnv?.version ?? selectedEnvForDeploy) || selectedEnvForDeploy;
+
+      const routing_version = selectedRouting && (typeof selectedRouting.version === 'number')
+        ? selectedRouting.version
+        : Number(selectedRouting?.version ?? selectedEnvForDeploy) || selectedEnvForDeploy;
 
       const target_hosts = hostsForDeploy.map((h, idx) => ({
         host: h,
@@ -777,7 +786,7 @@ export default function ServiceDetail() {
 
         timeout_seconds: 900,
         is_believe: true,
-        routing_version: 0,
+        routing_version, // latest by default
       };
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/submit-job`, {
@@ -1136,6 +1145,25 @@ export default function ServiceDetail() {
                   ))
                 ) : (
                   <option value={0}>No secret versions</option>
+                )}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Routing Version</label>
+              <select
+                value={selectedRoutingForDeploy}
+                onChange={(e) => setSelectedRoutingForDeploy(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm"
+              >
+                {routingResource.versions.length > 0 ? (
+                  routingResource.versions.map((rv, idx) => (
+                    <option key={idx} value={idx}>
+                      {rv.version ?? `v${idx}`} (published {formatRelativeTime(rv.published_at)})
+                    </option>
+                  ))
+                ) : (
+                  <option value={0}>No routing versions</option>
                 )}
               </select>
             </div>
