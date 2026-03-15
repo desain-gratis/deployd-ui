@@ -63,7 +63,7 @@ export default function RepositoryDetail() {
     const fetchRepo = async () => {
       setLoadingRepo(true);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/artifactd/repository`, { headers: { 'X-Namespace': namespace } });
+        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/artifactd/repository?id=${id}`, { headers: { 'X-Namespace': namespace } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!mounted) return;
@@ -79,7 +79,7 @@ export default function RepositoryDetail() {
     const fetchBuilds = async () => {
       setLoadingBuilds(true);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/artifactd/build`, { headers: { 'X-Namespace': namespace } });
+        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/artifactd/build?repository=${id}`, { headers: { 'X-Namespace': namespace } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!mounted) return;
@@ -220,10 +220,10 @@ export default function RepositoryDetail() {
 
       {/* Table */}
       <ReleasesTable
-        filteredBuilds={ filteredBuilds}
+        filteredBuilds={filteredBuilds}
         setDataModal={setDataModal}
       />
-        
+
       {dataModal && (
         <Modal title="Build Data" onClose={() => setDataModal(null)}>
           <pre className="text-xs bg-gray-100 dark:bg-gray-900 p-3 rounded text-[11px] overflow-auto">{JSON.stringify(dataModal, null, 2)}</pre>

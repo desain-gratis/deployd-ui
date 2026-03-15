@@ -118,7 +118,7 @@ export default function ServiceDetail() {
 
     const fetchSecrets = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/secret`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/secret?service=${id}`, {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -135,7 +135,7 @@ export default function ServiceDetail() {
 
     const fetchEnvs = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/env`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/env?service=${id}`, {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -152,7 +152,7 @@ export default function ServiceDetail() {
 
     const fetchRoutings = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/routing`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/routing?service=${id}`, {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -170,7 +170,7 @@ export default function ServiceDetail() {
 
     const fetchJobs = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/job`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/job?service=${id}`, {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -192,7 +192,7 @@ export default function ServiceDetail() {
 
     const fetchLastSuccessfulJob = async () => {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/successful-job`,
+        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/successful-job?service=${id}`,
         { headers: { "X-Namespace": service.namespace } }
       );
       const data = await res.json();
@@ -292,7 +292,7 @@ export default function ServiceDetail() {
 
     const fetchBuilds = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/artifactd/build`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/artifactd/build?repository=${service.repository?.id}`, {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -340,7 +340,7 @@ export default function ServiceDetail() {
 
       // try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/secret`,
+        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/secret?service=${id}`,
         { headers: { 'X-Namespace': service.namespace } }
       );
 
@@ -386,7 +386,7 @@ export default function ServiceDetail() {
 
       // try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/env`,
+        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/env?service=${id}`,
         { headers: { 'X-Namespace': service.namespace } }
       );
 
@@ -435,7 +435,7 @@ export default function ServiceDetail() {
 
       // try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/routing`,
+        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/routing?service=${id}`,
         { headers: { 'X-Namespace': service.namespace } }
       );
 
