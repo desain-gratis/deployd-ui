@@ -702,7 +702,7 @@ export default function ServiceDetail() {
         // Only fetch hosts if absolutely needed
         const hRes = await fetch(
           `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/host`,
-          { headers: { "X-Namespace": service.namespace } }
+          { headers: { "X-Namespace": "deployd" } } // hardcoded
         );
         const hData = await hRes.json();
         const hostList = Array.isArray(hData.success) ? hData.success : [];
