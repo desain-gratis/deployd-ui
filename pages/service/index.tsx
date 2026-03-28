@@ -746,9 +746,7 @@ export default function ServiceDetail() {
         ? selectedEnv.version
         : Number(selectedEnv?.version ?? selectedEnvForDeploy) || selectedEnvForDeploy;
 
-      const routing_version = selectedRouting && (typeof selectedRouting.version === 'number')
-        ? selectedRouting.version
-        : undefined;
+      const routing_version = selectedRouting ? Number(selectedRouting.version) : undefined; // works
 
       const target_hosts = hostsForDeploy.map((h, idx) => ({
         host: h,
