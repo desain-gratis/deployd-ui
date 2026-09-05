@@ -102,7 +102,8 @@ export function useVersionedRoutingResource({
                 namespace: namespace,
                 service: service,
                 ...value,
-                version: "",
+                id: "",
+                version: undefined,
                 published_at: getStandardizedTimestamp(),
             }
 

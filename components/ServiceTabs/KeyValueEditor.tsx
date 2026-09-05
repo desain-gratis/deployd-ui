@@ -177,7 +177,7 @@ export default function KeyValueEditor({
                   {versions.length === 0 ? (
                     <option value={0}>No previous history yet</option>
                   ) : (
-                    versions.map((v, idx) => (
+                    versions.sort((a, b) => Date.parse(b.published_at!) - Date.parse(a.published_at!) ).map((v, idx) => (
                       <option key={idx} value={idx}>
                         Version {v.version}
                         {v.published_at && (

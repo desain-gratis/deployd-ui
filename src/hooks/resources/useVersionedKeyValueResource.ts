@@ -106,7 +106,8 @@ export function useVersionedKeyValueResource({
                 ...latestVersion,
                 namespace: namespace,
                 service: service,
-                version: undefined,
+                version: undefined, // overwrite
+                id: "", // overwrite
                 value: {
                     ...currentValue,
                 },

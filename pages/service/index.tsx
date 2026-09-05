@@ -21,10 +21,10 @@ import RoutingTab from '../../components/ServiceTabs/RoutingTab';
 
 
 type ShardForm = {
-  id: string      // actual raft numeric index (non editable)
-  shard_id: number   // user editable string
-  type: string
-  description: string
+  id: string      // id
+  shard_id: number   // index
+  // type: string
+  // description: string
 }
 
 
@@ -125,10 +125,10 @@ export default function ServiceDetail() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!mounted) return;
-        const serviceSecrets = Array.isArray(data.success)
+        const serviceSecrets: KV[] = Array.isArray(data.success)
           ? data.success.filter((s: any) => s.service === id)
           : [];
-        setSecrets(serviceSecrets);
+        setSecrets(serviceSecrets.sort((a, b) => Date.parse(b.published_at!) - Date.parse(a.published_at!)));
       } catch (err: any) {
         if (mounted) setError(err.message || 'Failed to fetch secrets');
       }
@@ -142,10 +142,10 @@ export default function ServiceDetail() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!mounted) return;
-        const serviceEnvs = Array.isArray(data.success)
+        const serviceEnvs: KV[] = Array.isArray(data.success)
           ? data.success.filter((e: any) => e.service === id)
           : [];
-        setEnvs(serviceEnvs);
+        setEnvs(serviceEnvs.sort((a, b) => Date.parse(b.published_at!) - Date.parse(a.published_at!)));
       } catch (err: any) {
         if (mounted) setError(err.message || 'Failed to fetch envs');
       }
@@ -159,13 +159,13 @@ export default function ServiceDetail() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!mounted) return;
-        const routings = Array.isArray(data.success)
+        const routings: KV[] = Array.isArray(data.success)
           ? data.success.filter((e: any) => e.service === id)
           : [];
         if (routings.length > 0) {
           setSelectedRoutingForDeploy(0);
         }
-        setRoutings(routings);
+        setRoutings(routings.sort((a, b) => Date.parse(b.published_at!) - Date.parse(a.published_at!)));
       } catch (err: any) {
         if (mounted) setError(err.message || 'Failed to fetch routings');
       }
@@ -568,12 +568,15 @@ export default function ServiceDetail() {
               setLastSuccessfulJob(job);
 
               // TODO REFACTOR THIS GPT
-              const s = Object.entries(job.raft_config?.shards)
+    // const s = Object.entries(job.raft_config?.shards)
+              const s= job.raft_config?.etcd_raft_replicas
                 .map(([index, shard]: any) => ({
-                  shard_id: Number(index),
-                  id: shard.id,
-                  type: shard.type,
-                  description: shard.description
+                  id: Number(index),
+                  shard_id: shard.id, // or "name"
+                  // shard_id: Number(index),
+                  // id: shard.id,
+                  // type: shard.type,
+                  // description: shard.description
                 }))
 
               setShards({ ...s })
@@ -641,8 +644,8 @@ export default function ServiceDetail() {
       {
         shard_id: nextIndex,
         id: `shard-${nextIndex}`,
-        type: "",
-        description: "",
+        // type: "",
+        // description: "",
       }
     ])
   }
@@ -761,10 +764,10 @@ export default function ServiceDetail() {
 
       const raft_shard: Record<number, RaftShardConfig> = {}
 
-      shards.forEach(r => {
+      shards.forEach((r, idx) => {
         raft_shard[r.shard_id] = {
-          description: r.description,
-          type: r.type,
+          description: "", // r.description,
+          type: "",           // type: r.type,
           id: r.id,
           shard_id: r.shard_id
         }
@@ -782,6 +785,7 @@ export default function ServiceDetail() {
 
         raft_shard,
 
+        etcd_raft_replicas: shards.map(v => v.id),
         timeout_seconds: 900,
         is_believe: true,
         routing_version, // latest by default
@@ -1234,30 +1238,7 @@ export default function ServiceDetail() {
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-
-                      {/* Shard ID */}
-                      <div>
-                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                          Shard ID
-                        </label>
-                        <input
-                          type="number"
-                          value={shard.shard_id}
-                          onChange={(e) =>
-                            updateShard(shard.shard_id, "shard_id", Number(e.target.value))
-                          }
-                          className="
-                w-full
-                px-3 py-2
-                text-sm
-                rounded-md
-                border border-gray-300 dark:border-gray-700
-                bg-white dark:bg-gray-900
-              "
-                        />
-                      </div>
-
+                    <div className="grid">
                       {/* ID */}
                       <div>
                         <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
@@ -1267,27 +1248,6 @@ export default function ServiceDetail() {
                           value={shard.id}
                           onChange={(e) =>
                             updateShard(shard.shard_id, "id", e.target.value)
-                          }
-                          className="
-                w-full
-                px-3 py-2
-                text-sm
-                rounded-md
-                border border-gray-300 dark:border-gray-700
-                bg-white dark:bg-gray-900
-              "
-                        />
-                      </div>
-
-                      {/* Description */}
-                      <div>
-                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                          Description
-                        </label>
-                        <input
-                          value={shard.description}
-                          onChange={(e) =>
-                            updateShard(shard.shard_id, "description", e.target.value)
                           }
                           className="
                 w-full
