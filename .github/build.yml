@@ -31,7 +31,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-output
-          path: ./out # Change to './build' if using Create React App
+          path: ./out
           retention-days: 1 # Deletes automatically after 1 day to save storage
 
   # JOB 2: Runs only if 'build' succeeds and handles the upload/deployment
