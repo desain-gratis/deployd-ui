@@ -764,7 +764,7 @@ export default function ServiceDetail() {
 
       const raft_shard: Record<number, RaftShardConfig> = {}
 
-      shards.forEach((r, idx) => {
+      shards.forEach((r) => {
         raft_shard[r.shard_id] = {
           description: "", // r.description,
           type: "",           // type: r.type,

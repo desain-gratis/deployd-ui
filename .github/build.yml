@@ -1,0 +1,65 @@
+name: Node.js Split Build and Upload
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # JOB 1: Handles compilation and generates build files
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run build
+        run: npm run build --if-present
+
+      # Temporary share folder with the next job
+      - name: Upload temporary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: ./out # Change to './build' if using Create React App
+          retention-days: 1 # Deletes automatically after 1 day to save storage
+
+  # JOB 2: Runs only if 'build' succeeds and handles the upload/deployment
+  upload:
+    runs-on: ubuntu-latest
+    needs: build # Ensures job sequence
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: ./out # Downloads files back into this folder
+
+      - name: Verify archive exists
+        run: ls -la ./out
+
+      - name: Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:desain-gratis-ci
+
+      - name: Send deploy metadata
+        uses: desain-gratis/deployd-gh-action@v1
+        with:
+          url: http://hz1:9401
+          namespace: deployd
+          name: deployd-ui
+          build-script: echo "hello"
+          archive: ./out
