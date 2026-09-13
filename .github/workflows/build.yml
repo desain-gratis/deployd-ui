@@ -5,6 +5,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_call:
 
 jobs:
   # JOB 1: Handles compilation and generates build files
@@ -34,32 +35,3 @@ jobs:
           path: ./out
           retention-days: 1 # Deletes automatically after 1 day to save storage
 
-  # JOB 2: Runs only if 'build' succeeds and handles the upload/deployment
-  upload:
-    runs-on: ubuntu-latest
-    needs: build # Ensures job sequence
-    steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output
-          path: ./out # Downloads files back into this folder
-
-      - name: Verify archive exists
-        run: ls -la ./out
-
-      - name: Tailscale
-        uses: tailscale/github-action@v4
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:desain-gratis-ci
-
-      - name: Send deploy metadata
-        uses: desain-gratis/deployd-gh-action@v1
-        with:
-          url: http://hz1:9401
-          namespace: deployd
-          name: deployd-ui
-          build-script: echo "hello"
-          archive: ./out
