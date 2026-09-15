@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useNamespace } from '../../context/NamespaceContext';
+import { useApiEndpoint } from '../../context/ApiEndpointContext';
 
 type Repository = {
   id: string;
@@ -19,13 +20,16 @@ export default function ArtifactPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { apiEndpoint } = useApiEndpoint();
+  
+
   useEffect(() => {
     let mounted = true;
     const fetchRepos = async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/artifactd/repository`, {
+        const res = await fetch(`${apiEndpoint}/artifactd/repository`, {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

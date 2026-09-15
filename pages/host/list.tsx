@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useNamespace } from '../../context/NamespaceContext';
 import Modal from '../../components/Modal';
+import { useApiEndpoint } from '../../context/ApiEndpointContext';
 
 type ClickhouseConfig = {
   address?: string;
@@ -35,13 +36,15 @@ export default function HostPage() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Host | null>(null);
 
+  const { apiEndpoint } = useApiEndpoint();
+
   useEffect(() => {
     let mounted = true;
     const fetchHosts = async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/host`, {
+        const res = await fetch(`${apiEndpoint}/deployd/host`, {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -58,7 +61,7 @@ export default function HostPage() {
     return () => {
       mounted = false;
     };
-  }, [namespace]);
+  }, [apiEndpoint, namespace]);
 
   return (
     <div>

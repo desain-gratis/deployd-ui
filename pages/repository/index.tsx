@@ -7,6 +7,7 @@ import FlexSearch from 'flexsearch';
 import { useNamespace } from '../../context/NamespaceContext';
 import Modal from '../../components/Modal';
 import ReleasesTable from '../../components/ServiceTabs/ReleasesTable';
+import { useApiEndpoint } from '../../context/ApiEndpointContext';
 
 type Repository = {
   id: string;
@@ -56,14 +57,18 @@ export default function RepositoryDetail() {
   const [selectedActor, setSelectedActor] = useState<string | null>(null);
   const [index, setIndex] = useState<any>(null);
 
+  const { apiEndpoint } = useApiEndpoint();
+
   useEffect(() => {
     if (!id) return;
+    if (!apiEndpoint) return;
+
     let mounted = true;
 
     const fetchRepo = async () => {
       setLoadingRepo(true);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/artifactd/repository?id=${id}`, { headers: { 'X-Namespace': namespace } });
+        const res = await fetch(`${apiEndpoint}/artifactd/repository?id=${id}`, { headers: { 'X-Namespace': namespace } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!mounted) return;
@@ -79,7 +84,7 @@ export default function RepositoryDetail() {
     const fetchBuilds = async () => {
       setLoadingBuilds(true);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/artifactd/build?repository=${id}`, { headers: { 'X-Namespace': namespace } });
+        const res = await fetch(`${apiEndpoint}/artifactd/build?repository=${id}`, { headers: { 'X-Namespace': namespace } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!mounted) return;
@@ -113,7 +118,7 @@ export default function RepositoryDetail() {
     return () => {
       mounted = false;
     };
-  }, [id, namespace]);
+  }, [apiEndpoint, id, namespace]);
 
   useEffect(() => {
     let result = builds;

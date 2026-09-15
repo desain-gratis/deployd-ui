@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useNamespace } from '../../context/NamespaceContext';
+import { useApiEndpoint } from '../../context/ApiEndpointContext';
 
 type Repository = {
   url?: string;
@@ -33,13 +34,15 @@ export default function ServicePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { apiEndpoint } = useApiEndpoint();
+  
   useEffect(() => {
     let mounted = true;
     const fetchServices = async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/service`, {
+        const res = await fetch(`${apiEndpoint}/deployd/service`, {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -56,7 +59,7 @@ export default function ServicePage() {
     return () => {
       mounted = false;
     };
-  }, [namespace]);
+  }, [apiEndpoint, namespace]);
 
   return (
     <div>

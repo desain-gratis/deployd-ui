@@ -18,6 +18,7 @@ import { truncateCommit } from '../../components/ServiceTabs/ReleasesTable';
 import { useVersionedKeyValueResource } from '../../src/hooks/resources/useVersionedKeyValueResource';
 import { useVersionedRoutingResource } from '../../src/hooks/resources/useVersionedRoutingResource';
 import RoutingTab from '../../components/ServiceTabs/RoutingTab';
+import { useApiEndpoint } from '../../context/ApiEndpointContext';
 
 
 type ShardForm = {
@@ -79,13 +80,15 @@ export default function ServiceDetail() {
 
   const [shards, setShards] = useState<ShardForm[]>([])
 
+  const { apiEndpoint } = useApiEndpoint();
+
   useEffect(() => {
-    if (!id) return;
+    if (!apiEndpoint || !id) return;
     let mounted = true;
 
     const fetchService = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/service`, {
+        const res = await fetch(`${apiEndpoint}/deployd/service`, {
           headers: { 'X-Namespace': _namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -105,10 +108,10 @@ export default function ServiceDetail() {
     return () => {
       mounted = false;
     };
-  }, [_namespace, id]); // use global namespace
+  }, [apiEndpoint, _namespace, id]); // use global namespace
 
   useEffect(() => {
-    if (!service || !service.id || !service.namespace) return;
+    if (!service || !apiEndpoint || !service.id || !service.namespace) return;
     let namespace = service.namespace;
     let id = service.id;
 
@@ -119,7 +122,7 @@ export default function ServiceDetail() {
 
     const fetchSecrets = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/secret?service=${id}`, {
+        const res = await fetch(`${apiEndpoint}/secretd/secret?service=${id}`, {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -136,7 +139,7 @@ export default function ServiceDetail() {
 
     const fetchEnvs = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/env?service=${id}`, {
+        const res = await fetch(`${apiEndpoint}/secretd/env?service=${id}`, {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -153,7 +156,7 @@ export default function ServiceDetail() {
 
     const fetchRoutings = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/routing?service=${id}`, {
+        const res = await fetch(`${apiEndpoint}/secretd/routing?service=${id}`, {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -174,7 +177,7 @@ export default function ServiceDetail() {
 
     const fetchJobs = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/job?service=${id}`, {
+        const res = await fetch(`${apiEndpoint}/deployd/job?service=${id}`, {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -196,7 +199,7 @@ export default function ServiceDetail() {
 
     const fetchLastSuccessfulJob = async () => {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/successful-job?id=${id}`,
+        `${apiEndpoint}/deployd/successful-job?id=${id}`,
         { headers: { "X-Namespace": service.namespace } }
       );
       const data = await res.json();
@@ -217,7 +220,7 @@ export default function ServiceDetail() {
     return () => {
       mounted = false;
     };
-  }, [service]);
+  }, [apiEndpoint, service]);
 
   useEffect(() => {
     if (!service?.id || !lastSuccessfulJob) return;
@@ -287,7 +290,7 @@ export default function ServiceDetail() {
 
   // Fetch builds when service is available
   useEffect(() => {
-    if (!service?.repository?.id) return;
+    if (!apiEndpoint || !service?.repository?.id) return;
     if (!service || !service.id || !service.namespace) return;
     let namespace = service.namespace;
 
@@ -296,7 +299,7 @@ export default function ServiceDetail() {
 
     const fetchBuilds = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/artifactd/build?repository=${service.repository?.id}`, {
+        const res = await fetch(`${apiEndpoint}/artifactd/build?repository=${service.repository?.id}`, {
           headers: { 'X-Namespace': namespace }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -331,11 +334,11 @@ export default function ServiceDetail() {
     return () => {
       mounted = false;
     };
-  }, [service, service?.repository?.id, service?.namespace]);
+  }, [apiEndpoint, service, service?.repository?.id, service?.namespace]);
 
 
   const secretResource = useVersionedKeyValueResource({
-    endpoint: `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/secret`,
+    endpoint: `${apiEndpoint}/secretd/secret`,
     namespace: service?.namespace || 'deployd',
     service: service?.id!,
     initialVersions: secrets,
@@ -344,7 +347,7 @@ export default function ServiceDetail() {
 
       // try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/secret?service=${id}`,
+        `${apiEndpoint}/secretd/secret?service=${id}`,
         { headers: { 'X-Namespace': service.namespace } }
       );
 
@@ -381,7 +384,7 @@ export default function ServiceDetail() {
 
 
   const envResource = useVersionedKeyValueResource({
-    endpoint: `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/env`,
+    endpoint: `${apiEndpoint}/secretd/env`,
     namespace: service?.namespace || 'deployd',
     service: service?.id!,
     initialVersions: envs,
@@ -390,7 +393,7 @@ export default function ServiceDetail() {
 
       // try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/env?service=${id}`,
+        `${apiEndpoint}/secretd/env?service=${id}`,
         { headers: { 'X-Namespace': service.namespace } }
       );
 
@@ -430,7 +433,7 @@ export default function ServiceDetail() {
   });
 
   const routingResource = useVersionedRoutingResource({
-    endpoint: `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/routing`,
+    endpoint: `${apiEndpoint}/secretd/routing`,
     namespace: service?.namespace || 'deployd',
     service: service?.id!,
     initialVersions: routings,
@@ -439,7 +442,7 @@ export default function ServiceDetail() {
 
       // try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/secretd/routing?service=${id}`,
+        `${apiEndpoint}/secretd/routing?service=${id}`,
         { headers: { 'X-Namespace': service.namespace } }
       );
 
@@ -498,7 +501,7 @@ export default function ServiceDetail() {
 
   // WebSocket connection for real-time job updates (single connection)
   useEffect(() => {
-    if (!service || !service.id || !service.namespace) return;
+    if (!apiEndpoint || !service || !service.id || !service.namespace) return;
     let namespace = service.namespace;
     let id = service.id;
 
@@ -512,7 +515,7 @@ export default function ServiceDetail() {
       if (!mounted || ws) return; // Prevent duplicate connections
 
       try {
-        const endpoint = process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT!
+        const endpoint = apiEndpoint!
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const endpointNoPrefix = endpoint.replace(/^https?:\/\//, '');
 
@@ -613,7 +616,7 @@ export default function ServiceDetail() {
         ws = null;
       }
     };
-  }, [service, service?.id, service?.namespace]);
+  }, [apiEndpoint, service, service?.id, service?.namespace]);
 
   // Keep tab content container from collapsing/shrinking when switching tabs.
   const tabContentRef = useRef<HTMLDivElement | null>(null);
@@ -663,7 +666,7 @@ export default function ServiceDetail() {
   }
 
   const openDeployModal = async () => {
-    if (!service?.id || !service.namespace) return;
+    if (apiEndpoint! || !service?.id || !service.namespace) return;
 
 
     // for successful job, we use the value in raft_config, instead of request
@@ -704,7 +707,7 @@ export default function ServiceDetail() {
       } else {
         // Only fetch hosts if absolutely needed
         const hRes = await fetch(
-          `${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/host`,
+          `${apiEndpoint}/deployd/host`,
           { headers: { "X-Namespace": "deployd" } } // hardcoded
         );
         const hData = await hRes.json();
@@ -791,7 +794,7 @@ export default function ServiceDetail() {
         routing_version, // latest by default
       };
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_DEPLOYD_ENDPOINT}/deployd/submit-job`, {
+      const res = await fetch(`${apiEndpoint}/deployd/submit-job`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
