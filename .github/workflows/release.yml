@@ -21,10 +21,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-output
-          path: ./out # Downloads files back into this folder
+          path: out # Downloads files back into this folder
 
       - name: Verify archive exists
-        run: ls -la ./out
+        run: ls -R out
 
       - name: Archive
         run: |
@@ -44,10 +44,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-output
-          path: ./out # Downloads files back into this folder
+          path: out # Downloads files back into this folder
 
       - name: Verify archive exists
-        run: ls -la ./out
+        run: ls -R out
 
       - name: Tailscale
         uses: tailscale/github-action@v4
@@ -62,5 +62,4 @@ jobs:
           url: http://hz1:9401
           namespace: deployd
           name: deployd-ui
-          build-script: echo "hello"
-          archive: ./out
+          archive: out
