@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import FlexSearch from 'flexsearch';
-import { useNamespace } from '../../context/NamespaceContext';
 import Modal from '../../components/Modal';
 import ReleasesTable from '../../components/ServiceTabs/ReleasesTable';
 import { useApiEndpoint } from '../../context/ApiEndpointContext';
@@ -42,7 +41,6 @@ type Build = {
 export default function RepositoryDetail() {
   const router = useRouter();
   const { id } = router.query as { id?: string };
-  const { namespace } = useNamespace();
 
   const [repo, setRepo] = useState<Repository | null>(null);
   const [builds, setBuilds] = useState<Build[]>([]);
