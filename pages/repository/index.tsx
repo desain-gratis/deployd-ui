@@ -62,13 +62,14 @@ export default function RepositoryDetail() {
   useEffect(() => {
     if (!id) return;
     if (!apiEndpoint) return;
+    if (!repo) return;
 
     let mounted = true;
 
     const fetchRepo = async () => {
       setLoadingRepo(true);
       try {
-        const res = await fetch(`${apiEndpoint}/artifactd/repository?id=${id}`, { headers: { 'X-Namespace': namespace } });
+        const res = await fetch(`${apiEndpoint}/artifactd/repository?id=${id}`, { headers: { 'X-Namespace': repo.namespace } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!mounted) return;
@@ -84,7 +85,7 @@ export default function RepositoryDetail() {
     const fetchBuilds = async () => {
       setLoadingBuilds(true);
       try {
-        const res = await fetch(`${apiEndpoint}/artifactd/build?repository=${id}`, { headers: { 'X-Namespace': namespace } });
+        const res = await fetch(`${apiEndpoint}/artifactd/build?repository=${id}`, { headers: { 'X-Namespace': repo.namespace } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!mounted) return;
@@ -118,7 +119,7 @@ export default function RepositoryDetail() {
     return () => {
       mounted = false;
     };
-  }, [apiEndpoint, id, namespace]);
+  }, [apiEndpoint, id, repo]);
 
   useEffect(() => {
     let result = builds;
@@ -148,7 +149,7 @@ export default function RepositoryDetail() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-xl font-semibold">Repository: {id}</h2>
-          <div className="text-sm text-gray-600 dark:text-gray-300">Namespace: {namespace}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">Namespace: {repo?.namespace}</div>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/repository/list" className="text-sm text-blue-600 dark:text-blue-400">
