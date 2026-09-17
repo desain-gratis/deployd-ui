@@ -7,6 +7,7 @@ import FlexSearch from 'flexsearch';
 import Modal from '../../components/Modal';
 import ReleasesTable from '../../components/ServiceTabs/ReleasesTable';
 import { useApiEndpoint } from '../../context/ApiEndpointContext';
+import { useNamespace } from '../../context/NamespaceContext';
 
 type Repository = {
   id: string;
@@ -42,6 +43,8 @@ export default function RepositoryDetail() {
   const router = useRouter();
   const { id } = router.query as { id?: string };
 
+  const { namespace } = useNamespace();
+
   const [repo, setRepo] = useState<Repository | null>(null);
   const [builds, setBuilds] = useState<Build[]>([]);
   const [filteredBuilds, setFilteredBuilds] = useState<Build[]>([]);
@@ -67,7 +70,7 @@ export default function RepositoryDetail() {
     const fetchRepo = async () => {
       setLoadingRepo(true);
       try {
-        const res = await fetch(`${apiEndpoint}/artifactd/repository?id=${id}`, { headers: { 'X-Namespace': repo.namespace } });
+        const res = await fetch(`${apiEndpoint}/artifactd/repository?id=${id}`, { headers: { 'X-Namespace': namespace } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!mounted) return;
@@ -79,11 +82,20 @@ export default function RepositoryDetail() {
         if (mounted) setLoadingRepo(false);
       }
     };
+    fetchRepo();
+  }, [apiEndpoint, namespace, id]);
+
+  useEffect(() => {
+    if (!id) return;
+    if (!apiEndpoint) return;
+    if (!repo) return;
+
+    let mounted = true;
 
     const fetchBuilds = async () => {
       setLoadingBuilds(true);
       try {
-        const res = await fetch(`${apiEndpoint}/artifactd/build?repository=${id}`, { headers: { 'X-Namespace': repo.namespace } });
+        const res = await fetch(`${apiEndpoint}/artifactd/build?repository=${repo.id}`, { headers: { 'X-Namespace': repo.namespace } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!mounted) return;
@@ -111,13 +123,12 @@ export default function RepositoryDetail() {
       }
     };
 
-    fetchRepo();
     fetchBuilds();
 
     return () => {
       mounted = false;
     };
-  }, [apiEndpoint, id, repo]);
+  }, [apiEndpoint, repo]);
 
   useEffect(() => {
     let result = builds;
