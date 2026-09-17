@@ -64,7 +64,7 @@ export default function ArtifactPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {repos.map((r) => (
-          <Link key={`${r.namespace}_${r.id}`} href={`/repository?id=${encodeURIComponent(r.id)}`} className="card block">
+          <Link key={`${r.namespace}_${r.id}`} href={`/repository?namespace=${encodeURIComponent(r.namespace)}&id=${encodeURIComponent(r.id)}`} className="card block">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-lg font-semibold">{r.name ?? r.id}</div>

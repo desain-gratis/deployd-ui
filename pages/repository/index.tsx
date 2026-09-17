@@ -7,7 +7,6 @@ import FlexSearch from 'flexsearch';
 import Modal from '../../components/Modal';
 import ReleasesTable from '../../components/ServiceTabs/ReleasesTable';
 import { useApiEndpoint } from '../../context/ApiEndpointContext';
-import { useNamespace } from '../../context/NamespaceContext';
 
 type Repository = {
   id: string;
@@ -41,10 +40,7 @@ type Build = {
 
 export default function RepositoryDetail() {
   const router = useRouter();
-  const { id } = router.query as { id?: string };
-
-  const { namespace } = useNamespace();
-
+  const { id, namespace } = router.query as { id?: string, namespace?: string };
   const [repo, setRepo] = useState<Repository | null>(null);
   const [builds, setBuilds] = useState<Build[]>([]);
   const [filteredBuilds, setFilteredBuilds] = useState<Build[]>([]);
@@ -63,8 +59,8 @@ export default function RepositoryDetail() {
   useEffect(() => {
     if (!id) return;
     if (!apiEndpoint) return;
-    if (!repo) return;
-
+    if (!namespace) return;
+    
     let mounted = true;
 
     const fetchRepo = async () => {
@@ -82,20 +78,11 @@ export default function RepositoryDetail() {
         if (mounted) setLoadingRepo(false);
       }
     };
-    fetchRepo();
-  }, [apiEndpoint, namespace, id]);
-
-  useEffect(() => {
-    if (!id) return;
-    if (!apiEndpoint) return;
-    if (!repo) return;
-
-    let mounted = true;
 
     const fetchBuilds = async () => {
       setLoadingBuilds(true);
       try {
-        const res = await fetch(`${apiEndpoint}/artifactd/build?repository=${repo.id}`, { headers: { 'X-Namespace': repo.namespace } });
+        const res = await fetch(`${apiEndpoint}/artifactd/build?repository=${id}`, { headers: { 'X-Namespace': namespace } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!mounted) return;
@@ -123,12 +110,13 @@ export default function RepositoryDetail() {
       }
     };
 
+    fetchRepo();
     fetchBuilds();
 
     return () => {
       mounted = false;
     };
-  }, [apiEndpoint, repo]);
+  }, [apiEndpoint, namespace, id, ]);
 
   useEffect(() => {
     let result = builds;
