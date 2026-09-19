@@ -308,7 +308,7 @@ export default function ServiceDetail() {
         const list = Array.isArray(data.success)
           ? data.success.filter((b: any) => b.repository_id === service.repository?.id)
           : [];
-        setBuilds(list);
+        setBuilds(list.sort((a:any, b:any) => Date.parse(b.published_at!) - Date.parse(a.published_at!)));
 
         // Create flexsearch index
         const searchIndex = new FlexSearch.Index({ tokenize: 'forward' });
@@ -378,7 +378,7 @@ export default function ServiceDetail() {
       const serviceSecrets = Array.isArray(data.success)
         ? data.success.filter((s: any) => s.service === service.id)
         : [];
-      setSecrets(serviceSecrets);
+      setSecrets(serviceSecrets.sort((a:any, b:any) => Date.parse(b.published_at!) - Date.parse(a.published_at!)));
     },
   });
 
@@ -423,7 +423,7 @@ export default function ServiceDetail() {
       const serviceEnvs = Array.isArray(data.success)
         ? data.success.filter((e: any) => e.service === service.id)
         : [];
-      setEnvs(serviceEnvs);
+      setEnvs(serviceEnvs.sort((a:any, b:any) => Date.parse(b.published_at!) - Date.parse(a.published_at!)));
       // } catch (err: any) {
       //   setEnvError(err.message || "Request failed");
       // } finally {
@@ -471,7 +471,7 @@ export default function ServiceDetail() {
       const routingConfigs = Array.isArray(data.success)
         ? data.success.filter((e: any) => e.service === service.id) // TODO: use BE
         : [];
-      setRoutings(routingConfigs);
+      setRoutings(routingConfigs.sort((a:any, b:any) => Date.parse(b.published_at!) - Date.parse(a.published_at!)));
     },
   });
 
