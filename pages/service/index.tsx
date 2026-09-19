@@ -666,8 +666,7 @@ export default function ServiceDetail() {
   }
 
   const openDeployModal = async () => {
-    if (apiEndpoint! || !service?.id || !service.namespace) return;
-
+    if (!apiEndpoint || !service?.id || !service.namespace) return;
 
     // for successful job, we use the value in raft_config, instead of request
     const shardSource =
