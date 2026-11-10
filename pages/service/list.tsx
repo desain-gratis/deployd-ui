@@ -65,6 +65,12 @@ export default function ServicePage() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold">Services</h2>
+        <Link
+          href="/service/create"
+          className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          + Create service
+        </Link>
         <Link href="/" className="text-sm text-blue-600 dark:text-blue-400">
           ← Back
         </Link>
