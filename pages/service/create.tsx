@@ -27,14 +27,22 @@ function getErrorMessage(data: any, fallback: string) {
 
 export default function CreateServicePage() {
   const router = useRouter();
-  const { namespace: ns2 } = useNamespace();
+  const { namespace } = useNamespace();
   const { apiEndpoint } = useApiEndpoint();
+
+  const [serviceNamespace, setServiceNamespace] = useState(namespace || "");
+  const [namespaceEdited, setNamespaceEdited] = useState(false);
+
+  useEffect(() => {
+    if (!namespaceEdited && namespace) {
+      setServiceNamespace(namespace);
+    }
+  }, [namespace, namespaceEdited]);
 
   const [repositories, setRepositories] = useState<ArtifactRepository[]>([]);
   const [repositoriesLoading, setRepositoriesLoading] = useState(false);
   const [repositoriesError, setRepositoriesError] = useState<string | null>(null);
 
-    const [namespace, setNamespace] = useState("");
   const [serviceID, setServiceID] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -50,7 +58,10 @@ export default function CreateServicePage() {
   const repositoryPickerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!apiEndpoint) return;
+    if (!apiEndpoint || !serviceNamespace.trim() || serviceNamespace.trim() === "*") {
+      setRepositories([]);
+      return;
+    }
 
     let mounted = true;
 
@@ -60,7 +71,7 @@ export default function CreateServicePage() {
 
       try {
         const response = await fetch(`${apiEndpoint}/artifactd/repository`, {
-          headers: { "X-Namespace": namespace },
+          headers: { "X-Namespace": serviceNamespace },
         });
 
         const data = await response.json().catch(() => null);
@@ -88,7 +99,7 @@ export default function CreateServicePage() {
     return () => {
       mounted = false;
     };
-  }, [apiEndpoint, namespace]);
+  }, [apiEndpoint, serviceNamespace]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -103,12 +114,6 @@ export default function CreateServicePage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-    
-    useEffect(() => {
-        if (selectedRepository?.namespace !== namespace) {
-            setSelectedRepository(null);
-        }
-    }, [namespace, selectedRepository]);
 
   const filteredRepositories = useMemo(() => {
     const query = repositorySearch.trim().toLowerCase();
@@ -136,6 +141,16 @@ export default function CreateServicePage() {
       return;
     }
 
+    if (!serviceNamespace.trim()) {
+      setError("Namespace is required.");
+      return;
+    }
+
+    if (serviceNamespace.trim() === "*") {
+      setError('The "*" namespace is read-only and cannot be used to create a service.');
+      return;
+    }
+
     if (!serviceID.trim()) {
       setError("Service ID is required.");
       return;
@@ -150,7 +165,7 @@ export default function CreateServicePage() {
 
     try {
       const payload = {
-        namespace,
+        namespace: serviceNamespace.trim(),
         id: serviceID.trim(),
         name: name.trim(),
         description: description.trim(),
@@ -166,7 +181,7 @@ export default function CreateServicePage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Namespace": namespace,
+          "X-Namespace": serviceNamespace.trim(),
         },
         body: JSON.stringify(payload),
       });
@@ -183,7 +198,7 @@ export default function CreateServicePage() {
       const createdID = createdService?.id || payload.id;
 
       await router.push(
-        `/service/?namespace=${encodeURIComponent(namespace)}&id=${encodeURIComponent(createdID)}`
+        `/service/?namespace=${encodeURIComponent(serviceNamespace.trim())}&id=${encodeURIComponent(createdID)}`
       );
     } catch (err: any) {
       setError(err?.message || "Failed to create service");
@@ -213,20 +228,27 @@ export default function CreateServicePage() {
       </div>
 
       <div className="mb-5 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm dark:border-gray-700 dark:bg-gray-900/50">
-        <span className="text-gray-500 dark:text-gray-400">Namespace</span>
-              <span className="ml-2 font-medium">{namespace}</span>
-          <label htmlFor="service-id" className="mb-1.5 block text-sm font-medium">
-            Namespace <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="namespace"
-            value={namespace}
-            onChange={(event) => setNamespace(event.target.value)}
-            placeholder="e.g. deployd"
-            className={inputClass}
-            required
-            autoComplete="off"
-          />
+        <label htmlFor="service-namespace" className="mb-1.5 block text-sm font-medium">
+          Namespace <span className="text-red-500">*</span>
+        </label>
+        <input
+          id="service-namespace"
+          value={serviceNamespace}
+          onChange={(event) => {
+            setServiceNamespace(event.target.value);
+            setNamespaceEdited(true);
+            setSelectedRepository(null);
+          }}
+          placeholder="e.g. production"
+          className={inputClass}
+          required
+          pattern="[^*]+"
+          title={'The "*" namespace is read-only.'}
+          autoComplete="off"
+        />
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Defaults to your current namespace. The "*" namespace is read-only.
+        </p>
       </div>
 
       <form
