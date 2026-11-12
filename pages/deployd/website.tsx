@@ -122,7 +122,6 @@ export default function WebsiteDetailPage() {
   }, [apiEndpoint, website]);
 
   const latestJob = jobs[0];
-  const isTerminal = (status?: string) => !!status && terminalStatuses.includes(status);
 
   const openDeploy = async () => {
     setDeployError(null);
