@@ -7,7 +7,7 @@ import { useApiEndpoint } from "../../context/ApiEndpointContext";
 
 type Website = {
   namespace: string;
-  host_name: string;
+  host_address: string;
   name: string;
   description: string;
   artifact_id: string;
@@ -82,14 +82,14 @@ export default function WebsiteListPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {websites.map((website) => (
           <Link
-            key={`${website.namespace}/${website.host_name}`}
-            href={`/deployd/website?id=${encodeURIComponent(website.host_name)}`}
+            key={`${website.namespace}/${website.host_address}`}
+            href={`/deployd/website?id=${encodeURIComponent(website.host_address)}`}
             className="card block"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="truncate text-lg font-semibold">{website.name || website.host_name}</div>
-                <div className="mt-1 break-all text-sm text-blue-600 dark:text-blue-400">{website.host_name}</div>
+                <div className="truncate text-lg font-semibold">{website.name || website.host_address}</div>
+                <div className="mt-1 break-all text-sm text-blue-600 dark:text-blue-400">{website.host_address}</div>
               </div>
               <div className="shrink-0 text-xs text-gray-500">{website.published_at ? new Date(website.published_at).toLocaleString() : ""}</div>
             </div>
