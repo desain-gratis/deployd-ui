@@ -90,8 +90,8 @@ export default function WebsiteDetailPage() {
     const load = async () => {
       try {
         const [hostResponse, jobResponse] = await Promise.all([
-          fetch(`${apiEndpoint}/deployd/host`, { headers }),
-          fetch(`${apiEndpoint}/deployd/job?website=${encodeURIComponent(website.host_name)}`, { headers }),
+          fetch(`${apiEndpoint}/deployd/host`, { headers: { "X-Namespace": "deployd" } }),
+          fetch(`${apiEndpoint}/deployd/job`, { headers }),
         ]);
         if (hostResponse.ok) {
           const data = await hostResponse.json();
