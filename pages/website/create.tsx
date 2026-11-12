@@ -139,7 +139,7 @@ export default function CreateWebsitePage() {
       <div className="mb-5 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/50">
         <label className="mb-1.5 block text-sm font-medium">Namespace <span className="text-red-500">*</span></label>
         <input value={websiteNamespace} onChange={(e) => { setWebsiteNamespace(e.target.value); setNamespaceEdited(true); setSelectedRepository(null); }} className={inputClass} placeholder="e.g. production" required />
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Defaults to your current namespace. The "*" namespace is read-only.</p>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Defaults to your current namespace. The &quot;*&quot; namespace is read-only.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-950">

@@ -247,7 +247,7 @@ export default function CreateServicePage() {
           autoComplete="off"
         />
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          Defaults to your current namespace. The "*" namespace is read-only.
+          Defaults to your current namespace. The &quot;*&quot; namespace is read-only.
         </p>
       </div>
 

@@ -19,7 +19,6 @@ type WebsiteJob = {
   url?: string; published_at?: string; finished_at?: string;
 };
 
-const terminalStatuses = ["SUCCESS", "TIMEOUT", "CANCELLED", "FAILED"];
 const inputClass = "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100";
 
 function getError(data: any, fallback: string) {
@@ -122,7 +121,6 @@ export default function WebsiteDetailPage() {
   }, [apiEndpoint, website]);
 
   const latestJob = jobs[0];
-  const isTerminal = (status?: string) => !!status && terminalStatuses.includes(status);
 
   const openDeploy = async () => {
     setDeployError(null);
