@@ -26,10 +26,11 @@ export default function CreateWebsitePage() {
 
   const [websiteNamespace, setWebsiteNamespace] = useState(namespace || "");
   const [namespaceEdited, setNamespaceEdited] = useState(false);
-  const [hostName, setHostName] = useState("");
+  const [hostAddress, setHostAddress] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [url, setUrl] = useState("");
+  const [listenAddress, setListenAddress] = useState("");
+  const [custom404Page, setCustom404Page] = useState("");
   const [repositories, setRepositories] = useState<ArtifactRepository[]>([]);
   const [repositorySearch, setRepositorySearch] = useState("");
   const [selectedRepository, setSelectedRepository] = useState<ArtifactRepository | null>(null);
@@ -93,7 +94,7 @@ export default function CreateWebsitePage() {
     event.preventDefault();
     setError(null);
     const ns = websiteNamespace.trim();
-    const host = hostName.trim();
+    const host = hostAddress.trim();
     if (!apiEndpoint) return setError("API endpoint is not configured.");
     if (!ns || ns === "*") return setError('Enter a writable namespace. The "*" namespace is read-only.');
     if (!host) return setError("Host name is required.");
@@ -103,11 +104,12 @@ export default function CreateWebsitePage() {
     try {
       const payload = {
         namespace: ns,
-        host_name: host,
+        host_address: host,
         name: name.trim(),
         description: description.trim(),
         artifact_id: selectedRepository.id,
-        url: url.trim(),
+        listen_address: listenAddress.trim(),
+        custom_404_page: custom404Page.trim(),
       };
       const response = await fetch(`${apiEndpoint}/deployd/website`, {
         method: "POST",
@@ -142,8 +144,8 @@ export default function CreateWebsitePage() {
 
       <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-950">
         <div>
-          <label className="mb-1.5 block text-sm font-medium">Host name <span className="text-red-500">*</span></label>
-          <input value={hostName} onChange={(e) => setHostName(e.target.value)} className={inputClass} placeholder="www.example.com" required autoComplete="off" />
+          <label className="mb-1.5 block text-sm font-medium">Host address <span className="text-red-500">*</span></label>
+          <input value={hostAddress} onChange={(e) => setHostAddress(e.target.value)} className={inputClass} placeholder="www.example.com" required autoComplete="off" />
         </div>
         <div>
           <label className="mb-1.5 block text-sm font-medium">Name</label>
@@ -173,8 +175,12 @@ export default function CreateWebsitePage() {
           </div>}
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium">URL</label>
-          <input value={url} onChange={(e) => setUrl(e.target.value)} className={inputClass} placeholder="https://www.example.com" />
+          <label className="mb-1.5 block text-sm font-medium">Listen address</label>
+          <input value={listenAddress} onChange={(e) => setListenAddress(e.target.value)} className={inputClass} placeholder=":8080 or 127.0.0.1:8080" />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium">Custom 404 page</label>
+          <textarea value={custom404Page} onChange={(e) => setCustom404Page(e.target.value)} className={inputClass} rows={3} placeholder="Optional custom 404 page content or configuration" />
         </div>
         {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">{error}</div>}
         <div className="flex justify-end gap-2">
