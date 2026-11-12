@@ -46,7 +46,7 @@ export default function ArtifactPage() {
     return () => {
       mounted = false;
     };
-  }, [namespace]);
+  }, [namespace, apiEndpoint]);
 
   return (
     <div>
