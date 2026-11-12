@@ -8,15 +8,14 @@ import { useNamespace } from "../../context/NamespaceContext";
 import { useApiEndpoint } from "../../context/ApiEndpointContext";
 
 type Website = {
-  namespace: string; host_name: string; name: string; description: string;
-  artifact_id: string; url: string; published_at: string;
+  namespace: string; host_address: string; name: string; description: string;
+  artifact_id: string; custom_404_page?: string; listen_address?: string; url: string; published_at: string;
 };
-type Host = { host: string; fqdn?: string; os?: string; architecture?: string };
 type Build = { id: string; name?: string; branch?: string; commit_id?: string; actor?: string; repository_id?: string; published_at?: string };
 type HostUpdateResult = { status: string; error?: string; message: string; host_id: string; job_id: string; time?: string };
 type WebsiteJob = {
   namespace: string; id: string; status: string; result?: Record<string, HostUpdateResult>;
-  request: { website_host_address: string; repository_id?: string; build_id?: string; from_url?: string };
+  request: { website: Website; build_id?: string; from_url?: string };
   url?: string; published_at?: string; finished_at?: string;
 };
 
@@ -40,7 +39,6 @@ export default function WebsiteDetailPage() {
   const { apiEndpoint } = useApiEndpoint();
 
   const [website, setWebsite] = useState<Website | null>(null);
-  const [hosts, setHosts] = useState<Host[]>([]);
   const [builds, setBuilds] = useState<Build[]>([]);
   const [jobs, setJobs] = useState<WebsiteJob[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,10 +49,6 @@ export default function WebsiteDetailPage() {
   const [sourceMode, setSourceMode] = useState<"build" | "url">("build");
   const [buildID, setBuildID] = useState("");
   const [fromUrl, setFromUrl] = useState("");
-  const [selectedHosts, setSelectedHosts] = useState<string[]>([]);
-  const [listenAddress, setListenAddress] = useState("");
-  const [internalAddresses, setInternalAddresses] = useState<Record<string, string>>({});
-  const [custom404Page, setCustom404Page] = useState("");
 
   const loadWebsite = useCallback(async () => {
     if (!apiEndpoint || !hostname) return;
@@ -72,7 +66,7 @@ export default function WebsiteDetailPage() {
       const data = await response.json().catch(() => null);
       if (!response.ok || data?.error) throw new Error(getError(data, `HTTP ${response.status}`));
       const value = data?.success;
-      const found = Array.isArray(value) ? value.find((item: Website) => item.host_name === hostname) : value;
+      const found = Array.isArray(value) ? value.find((item: Website) => item.host_address === hostname) : value;
       setWebsite(found?.website || found || null);
     } catch (err: any) {
       setError(err?.message || "Failed to load website");
@@ -89,18 +83,11 @@ export default function WebsiteDetailPage() {
     const headers = { "X-Namespace": website.namespace };
     const load = async () => {
       try {
-        const [hostResponse, jobResponse] = await Promise.all([
-          fetch(`${apiEndpoint}/deployd/host`, { headers: { "X-Namespace": "deployd" } }),
-          fetch(`${apiEndpoint}/deployd/job`, { headers }),
-        ]);
-        if (hostResponse.ok) {
-          const data = await hostResponse.json();
-          if (mounted) setHosts(Array.isArray(data?.success) ? data.success : []);
-        }
-        if (jobResponse.ok) {
+        const jobResponse = await fetch(`${apiEndpoint}/deployd/job`, { headers });
+      if (jobResponse.ok) {
           const data = await jobResponse.json();
           const list = Array.isArray(data?.success) ? data.success : [];
-          const filtered = list.filter((job: WebsiteJob) => job.request?.website_host_address === website.host_name);
+          const filtered = list.filter((job: WebsiteJob) => job.request?.website?.host_address === website.host_address);
           filtered.sort((a: WebsiteJob, b: WebsiteJob) => Date.parse(b.published_at || "") - Date.parse(a.published_at || ""));
           if (mounted) setJobs(filtered);
         }
@@ -141,16 +128,8 @@ export default function WebsiteDetailPage() {
     setDeployError(null);
     setSourceMode("build");
     setFromUrl("");
-    setListenAddress("");
-    setCustom404Page("");
-    setInternalAddresses({});
-    setSelectedHosts(hosts.map((host) => host.host));
     setBuildID((current) => current || builds[0]?.id || "");
     setShowDeploy(true);
-  };
-
-  const toggleHost = (host: string) => {
-    setSelectedHosts((current) => current.includes(host) ? current.filter((item) => item !== host) : [...current, host]);
   };
 
   const submitDeploy = async () => {
@@ -158,28 +137,9 @@ export default function WebsiteDetailPage() {
     setDeployError(null);
     if (sourceMode === "build" && !buildID) return setDeployError("Select a build.");
     if (sourceMode === "url" && !fromUrl.trim()) return setDeployError("Enter an archive URL.");
-    if (selectedHosts.length === 0) return setDeployError("Select at least one target host.");
-
-    const targetHosts: Record<string, { host: string }> = {};
-    selectedHosts.forEach((host) => { targetHosts[host] = { host }; });
-    const internal: Record<string, string> = {};
-    selectedHosts.forEach((host) => {
-      if (internalAddresses[host]?.trim()) internal[host] = internalAddresses[host].trim();
-    });
-
-    const payload: any = {
-      website_host_address: website.host_name,
-      target_hosts: targetHosts,
-      listen_address: listenAddress.trim() || undefined,
-      listen_address_internal: Object.keys(internal).length ? internal : undefined,
-      custom_404_page: custom404Page || undefined,
-    };
-    if (sourceMode === "url") {
-      payload.from_url = fromUrl.trim();
-    } else {
-      payload.repository_id = website.artifact_id;
-      payload.build_id = buildID;
-    }
+    const payload: any = { website };
+    if (sourceMode === "url") payload.from_url = fromUrl.trim();
+    else payload.build_id = buildID;
 
     setDeploying(true);
     try {
@@ -223,8 +183,7 @@ export default function WebsiteDetailPage() {
         {website.description && <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">{website.description}</p>}
         <div className="grid gap-4 text-sm sm:grid-cols-2">
           <div><div className="text-xs text-gray-500">Artifact ID</div><div className="mt-1 font-mono">{website.artifact_id || "—"}</div></div>
-          <div><div className="text-xs text-gray-500">Website URL</div><div className="mt-1 break-all">{website.url || "—"}</div></div>
-          <div><div className="text-xs text-gray-500">Published</div><div className="mt-1">{website.published_at ? new Date(website.published_at).toLocaleString() : "—"}</div></div>
+<div><div className="text-xs text-gray-500">Published</div><div className="mt-1">{website.published_at ? new Date(website.published_at).toLocaleString() : "—"}</div></div>
           <div><div className="text-xs text-gray-500">Latest deployment</div><div className="mt-1"><span className={`rounded px-2 py-1 text-xs font-medium ${statusClass(statusSummary)}`}>{statusSummary}</span></div></div>
         </div>
         <div className="mt-5 flex justify-end"><button onClick={openDeploy} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Deploy website</button></div>
@@ -251,7 +210,7 @@ export default function WebsiteDetailPage() {
         ))}</div>
       )}
 
-      {showDeploy && <Modal title={`Deploy ${website?.host_name || "website"}`} onClose={() => !deploying && setShowDeploy(false)}>
+      {showDeploy && <Modal title={`Deploy ${website?.host_address || "website"}`} onClose={() => !deploying && setShowDeploy(false)}>
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium">Deployment source</label>
@@ -272,20 +231,6 @@ export default function WebsiteDetailPage() {
             <input value={fromUrl} onChange={(e) => setFromUrl(e.target.value)} className={inputClass} placeholder="https://example.com/site.tar.gz" />
             <p className="mt-1 text-xs text-gray-500">Use a tar.gz archive URL. Repository and build IDs will be omitted.</p>
           </div>}
-
-          <div>
-            <label className="mb-2 block text-sm font-medium">Target hosts <span className="text-red-500">*</span></label>
-            {hosts.length === 0 ? <p className="text-xs text-gray-500">No hosts are available in this namespace.</p> : <div className="max-h-40 space-y-2 overflow-y-auto rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-              {hosts.map((host) => <label key={host.host} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selectedHosts.includes(host.host)} onChange={() => toggleHost(host.host)} />{host.host}{host.fqdn ? ` · ${host.fqdn}` : ""}</label>)}
-            </div>}
-          </div>
-
-          <div><label className="mb-1 block text-sm font-medium">Listen address</label><input value={listenAddress} onChange={(e) => setListenAddress(e.target.value)} className={inputClass} placeholder="Common listen address (optional)" /></div>
-          {selectedHosts.length > 0 && <div>
-            <label className="mb-2 block text-sm font-medium">Internal listen address per host</label>
-            <div className="space-y-2">{selectedHosts.map((host) => <div key={host} className="grid grid-cols-2 items-center gap-2"><span className="truncate text-xs text-gray-500">{host}</span><input value={internalAddresses[host] || ""} onChange={(e) => setInternalAddresses((current) => ({ ...current, [host]: e.target.value }))} className={inputClass} placeholder="Optional address" /></div>)}</div>
-          </div>}
-          <div><label className="mb-1 block text-sm font-medium">Custom 404 page</label><textarea value={custom404Page} onChange={(e) => setCustom404Page(e.target.value)} className={inputClass} rows={4} placeholder="Optional custom 404 page content or configuration" /></div>
 
           {deployError && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">{deployError}</div>}
           <div className="flex justify-end gap-2"><button type="button" disabled={deploying} onClick={() => setShowDeploy(false)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700">Cancel</button><button type="button" disabled={deploying} onClick={submitDeploy} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">{deploying ? "Submitting..." : "Deploy"}</button></div>
