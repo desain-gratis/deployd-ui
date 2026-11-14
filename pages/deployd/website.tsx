@@ -82,13 +82,16 @@ export default function WebsiteDetailPage() {
     const headers = { "X-Namespace": website.namespace };
     const load = async () => {
       try {
-        const jobResponse = await fetch(`${apiEndpoint}/deployd/job`, { headers });
-      if (jobResponse.ok) {
+        const jobResponse = await fetch(
+          `${apiEndpoint}/deployd/job/deploy-website?host_address=${encodeURIComponent(website.host_address)}`,
+          { headers },
+        );
+        if (jobResponse.ok) {
           const data = await jobResponse.json();
-          const list = Array.isArray(data?.success) ? data.success : [];
-          const filtered = list.filter((job: WebsiteJob) => job.request?.website?.host_address === website.host_address);
-          filtered.sort((a: WebsiteJob, b: WebsiteJob) => Date.parse(b.published_at || "") - Date.parse(a.published_at || ""));
-          if (mounted) setJobs(filtered);
+          const value = data?.success;
+          const list = Array.isArray(value) ? value : value ? [value] : [];
+          list.sort((a: WebsiteJob, b: WebsiteJob) => Date.parse(b.published_at || "") - Date.parse(a.published_at || ""));
+          if (mounted) setJobs(list);
         }
       } catch {
         // Website details remain usable if optional host/job endpoints are unavailable.
@@ -141,11 +144,14 @@ export default function WebsiteDetailPage() {
 
     setDeploying(true);
     try {
-      const response = await fetch(`${apiEndpoint}/deployd/job/deploy-website`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Namespace": website.namespace },
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        `${apiEndpoint}/deployd/job/deploy-website?host_address=${encodeURIComponent(website.host_address)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Namespace": website.namespace },
+          body: JSON.stringify(payload),
+        },
+      );
       const data = await response.json().catch(() => null);
       if (!response.ok || data?.error) throw new Error(getError(data, `Failed to deploy website (HTTP ${response.status})`));
       const job = data?.success?.job || data?.success;
