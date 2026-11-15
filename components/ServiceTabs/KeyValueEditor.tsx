@@ -18,6 +18,10 @@ type Props = {
   selectedVersionIndex?: number;
   onSelectVersion?: (index: number) => void;
 
+  hosts?: string[];
+  selectedHost?: string;
+  onSelectHost?: (host: string) => void;
+
   format: DataFormat;
   onFormatChange: (format: DataFormat) => void;
 
@@ -70,6 +74,9 @@ export default function KeyValueEditor({
   versions = [],
   selectedVersionIndex = 0,
   onSelectVersion,
+  hosts = [],
+  selectedHost = "",
+  onSelectHost,
   format,
   onFormatChange,
   entries,
@@ -161,7 +168,7 @@ export default function KeyValueEditor({
       <div className="space-y-4">
         <div className="p-4 rounded bg-gray-50 dark:bg-gray-800">
           {/* Header Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div className={`grid grid-cols-1 ${onSelectHost ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-4 mb-4`}>
             {onSelectVersion && (
               <div>
                 <label className="block text-sm font-medium mb-1">
@@ -190,6 +197,24 @@ export default function KeyValueEditor({
                       </option>
                     ))
                   )}
+                </select>
+              </div>
+            )}
+
+            {onSelectHost && (
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Configuration Scope
+                </label>
+                <select
+                  value={selectedHost}
+                  onChange={(e) => onSelectHost(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm"
+                >
+                  <option value="">Global</option>
+                  {hosts.map((host) => (
+                    <option key={host} value={host}>{host}</option>
+                  ))}
                 </select>
               </div>
             )}
