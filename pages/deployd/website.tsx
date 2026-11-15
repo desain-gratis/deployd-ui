@@ -39,6 +39,7 @@ export default function WebsiteDetailPage() {
   const { apiEndpoint } = useApiEndpoint();
 
   const [website, setWebsite] = useState<Website | null>(null);
+  const [activeTab, setActiveTab] = useState<"deployment" | "settings">("deployment");
   const [builds, setBuilds] = useState<Build[]>([]);
   const [jobs, setJobs] = useState<WebsiteJob[]>([]);
   const [loading, setLoading] = useState(false);
@@ -124,6 +125,67 @@ export default function WebsiteDetailPage() {
     return () => { mounted = false; };
   }, [apiEndpoint, website]);
 
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [deletingWebsite, setDeletingWebsite] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [settings, setSettings] = useState<Website | null>(null);
+
+  useEffect(() => {
+    if (website) setSettings({ ...website });
+  }, [website]);
+
+  const saveWebsiteSettings = async () => {
+    if (!settings || !apiEndpoint) return;
+    setSettingsError(null);
+    setSavingSettings(true);
+    try {
+      const response = await fetch(`${apiEndpoint}/deployd/website`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Namespace": settings.namespace },
+        body: JSON.stringify(settings),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.error) throw new Error(getError(data, `HTTP ${response.status}`));
+      const updated = data?.success?.website || data?.success;
+      if (updated && typeof updated === "object" && updated.host_address) {
+        setWebsite(updated);
+        setSettings(updated);
+      } else {
+        setWebsite(settings);
+      }
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 5000);
+    } catch (err: any) {
+      setSettingsError(err?.message || "Failed to save website settings");
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const deleteWebsite = async () => {
+    if (!website || !apiEndpoint) return;
+    if (!window.confirm(`Delete website "${website.host_address}"? This action cannot be undone.`)) return;
+    setSettingsError(null);
+    setDeletingWebsite(true);
+    try {
+      const response = await fetch(`${apiEndpoint}/deployd/website`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", "X-Namespace": website.namespace },
+        body: JSON.stringify(website),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.error) throw new Error(getError(data, `HTTP ${response.status}`));
+      setDeleteSuccess(true);
+      setTimeout(() => router.push("/website/list"), 1500);
+    } catch (err: any) {
+      setSettingsError(err?.message || "Failed to delete website");
+    } finally {
+      setDeletingWebsite(false);
+    }
+  };
+
   const latestJob = jobs[0];
 
   const openDeploy = async () => {
@@ -184,14 +246,38 @@ export default function WebsiteDetailPage() {
       {loading && <div className="text-sm text-gray-500">Loading website...</div>}
       {error && <div className="mb-4 text-sm text-red-600">{error}</div>}
 
-      {website && <div className="mb-5 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-950">
-        {website.description && <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">{website.description}</p>}
-        <div className="grid gap-4 text-sm sm:grid-cols-2">
-          <div><div className="text-xs text-gray-500">Artifact ID</div><div className="mt-1 font-mono">{website.artifact_id || "—"}</div></div>
-<div><div className="text-xs text-gray-500">Published</div><div className="mt-1">{website.published_at ? <span title={formatLocalDateTime(website.published_at)}>{formatRelativeTime(website.published_at)}</span> : "—"}</div></div>
-          <div><div className="text-xs text-gray-500">Latest deployment</div><div className="mt-1"><span className={`rounded px-2 py-1 text-xs font-medium ${statusClass(statusSummary)}`}>{statusSummary}</span></div></div>
+      {website && <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("deployment")}
+            className={`border-b-2 px-4 py-2 text-sm font-medium ${activeTab === "deployment" ? "border-blue-600 text-blue-600 dark:text-blue-400" : "border-transparent text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"}`}
+          >
+            Deployment
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("settings")}
+            className={`border-b-2 px-4 py-2 text-sm font-medium ${activeTab === "settings" ? "border-blue-600 text-blue-600 dark:text-blue-400" : "border-transparent text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"}`}
+          >
+            Settings
+          </button>
         </div>
-        <div className="mt-5 flex justify-end"><button onClick={openDeploy} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Deploy website</button></div>
+      </div>}
+
+      {activeTab === "deployment" && <>
+      {website && <div className="mb-5 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-950">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            {website.description && <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">{website.description}</p>}
+            <div className="grid gap-4 text-sm sm:grid-cols-2">
+              <div><div className="text-xs text-gray-500">Artifact ID</div><div className="mt-1 font-mono">{website.artifact_id || "—"}</div></div>
+              <div><div className="text-xs text-gray-500">Published</div><div className="mt-1">{website.published_at ? <span title={formatLocalDateTime(website.published_at)}>{formatRelativeTime(website.published_at)}</span> : "—"}</div></div>
+              <div><div className="text-xs text-gray-500">Latest deployment</div><div className="mt-1"><span className={`rounded px-2 py-1 text-xs font-medium ${statusClass(statusSummary)}`}>{statusSummary}</span></div></div>
+            </div>
+          </div>
+          <button onClick={openDeploy} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Deploy website</button>
+        </div>
       </div>}
 
       <div className="mb-3 flex items-center justify-between"><h3 className="font-semibold">Deployment history</h3><span className="text-xs text-gray-500">{jobs.length} jobs</span></div>
@@ -213,6 +299,88 @@ export default function WebsiteDetailPage() {
             ))}</div>
           </div>
         ))}</div>
+      )}
+
+      </>}
+
+      {activeTab === "settings" && <>
+      {website && settings && <div className="mb-6 space-y-6">
+        <section className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-950">
+          <div className="mb-5">
+            <h3 className="text-lg font-semibold">Website settings</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Update website information and host configuration.</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Namespace</label>
+              <input value={settings.namespace} disabled className={inputClass} />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Host address</label>
+              <input value={settings.host_address} disabled className={inputClass} />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="mb-1.5 block text-sm font-medium">Name</label>
+              <input value={settings.name || ""} onChange={(e) => setSettings({ ...settings, name: e.target.value })} className={inputClass} />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="mb-1.5 block text-sm font-medium">Description</label>
+              <textarea rows={3} value={settings.description || ""} onChange={(e) => setSettings({ ...settings, description: e.target.value })} className={inputClass} />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Artifact ID</label>
+              <input value={settings.artifact_id || ""} onChange={(e) => setSettings({ ...settings, artifact_id: e.target.value })} className={inputClass} />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Listen address</label>
+              <input value={settings.listen_address || ""} onChange={(e) => setSettings({ ...settings, listen_address: e.target.value })} className={inputClass} />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="mb-1.5 block text-sm font-medium">Custom 404 page</label>
+              <textarea rows={4} value={settings.custom_404_page || ""} onChange={(e) => setSettings({ ...settings, custom_404_page: e.target.value })} className={inputClass} />
+            </div>
+          </div>
+          {settingsError && <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">{settingsError}</div>}
+          <div className="mt-5 flex justify-end">
+            <button type="button" onClick={saveWebsiteSettings} disabled={savingSettings || deletingWebsite} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">{savingSettings ? "Saving..." : "Save changes"}</button>
+          </div>
+        </section>
+        <section className="rounded-xl border border-red-300 bg-white p-5 dark:border-red-900 dark:bg-gray-950">
+          <h3 className="text-lg font-semibold text-red-700 dark:text-red-400">Danger zone</h3>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Permanently delete this website. This action cannot be undone.</p>
+          <div className="mt-4 flex justify-end">
+            <button type="button" onClick={deleteWebsite} disabled={deletingWebsite || savingSettings} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">{deletingWebsite ? "Deleting..." : "Delete website"}</button>
+          </div>
+        </section>
+      </div>}
+
+      </>}
+
+      {settingsSaved && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-3 fade-in duration-300">
+          <div className="flex items-start gap-3 max-w-sm rounded-xl border border-gray-800 bg-gray-900/95 px-4 py-3 shadow-lg backdrop-blur">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-900/40">
+              <svg className="h-4 w-4 text-green-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div className="text-sm leading-snug">
+              <div className="font-semibold text-gray-100">Settings saved</div>
+              <div className="text-gray-400">Website information has been updated.</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteSuccess && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-3 fade-in duration-300">
+          <div className="flex items-start gap-3 max-w-sm rounded-xl border border-gray-800 bg-gray-900/95 px-4 py-3 shadow-lg backdrop-blur">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-900/40">
+              <svg className="h-4 w-4 text-green-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <div className="text-sm leading-snug"><div className="font-semibold text-gray-100">Website deleted</div><div className="text-gray-400">Redirecting to websites...</div></div>
+          </div>
+        </div>
       )}
 
       {showDeploy && <Modal title={`Deploy ${website?.host_address || "website"}`} onClose={() => !deploying && setShowDeploy(false)}>

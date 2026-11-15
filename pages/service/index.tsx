@@ -863,6 +863,81 @@ export default function ServiceDetail() {
     }
   };
 
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [deletingService, setDeletingService] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  const [serviceSettings, setServiceSettings] = useState<typeof service>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
+
+  useEffect(() => {
+    if (service) {
+      setServiceSettings({
+        ...service,
+        repository: service.repository ? { ...service.repository } : service.repository,
+      });
+    }
+  }, [service]);
+
+
+  const saveServiceSettings = async () => {
+    if (!serviceSettings || !apiEndpoint) return;
+    setSettingsError(null);
+    setSavingSettings(true);
+    try {
+      const response = await fetch(`${apiEndpoint}/deployd/service`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Namespace': serviceSettings.namespace,
+        },
+        body: JSON.stringify(serviceSettings),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.error) {
+        throw new Error(data?.error?.errors?.[0]?.message || data?.error?.message || data?.message || `HTTP ${response.status}`);
+      }
+      const updated = data?.success?.service || data?.success;
+      if (updated && typeof updated === 'object' && updated.id) {
+        setService(updated);
+        setServiceSettings({ ...updated, repository: updated.repository ? { ...updated.repository } : updated.repository });
+      }
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 5000);
+    } catch (err: any) {
+      setSettingsError(err?.message || 'Failed to save service settings');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const deleteService = async () => {
+    if (!service || !apiEndpoint) return;
+    if (!window.confirm(`Delete service "${service.id}"? This action cannot be undone.`)) return;
+    setSettingsError(null);
+    setDeletingService(true);
+    try {
+      const response = await fetch(`${apiEndpoint}/deployd/service`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Namespace': service.namespace,
+        },
+        body: JSON.stringify(service),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.error) {
+        throw new Error(data?.error?.errors?.[0]?.message || data?.error?.message || data?.message || `HTTP ${response.status}`);
+      }
+      setDeleteSuccess(true);
+      setTimeout(() => router.push('/service/list'), 1500);
+    } catch (err: any) {
+      setSettingsError(err?.message || 'Failed to delete service');
+    } finally {
+      setDeletingService(false);
+    }
+  };
+
   const getStatusBadgeColor = (status?: string) => {
     if (!status) return 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     if (status === 'DEPLOYED') return 'bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200';
@@ -923,7 +998,7 @@ export default function ServiceDetail() {
       {/* Tabs */}
       <div className="mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto [-webkit-overflow-scrolling:touch]">
         <div className="flex gap-2 whitespace-nowrap min-w-max">
-          {['deployment', 'releases', 'env', 'secret', 'routing', 'job-log'].map((t) => (
+          {['deployment', 'releases', 'env', 'secret', 'routing', 'job-log', 'settings'].map((t) => (
             <button
               key={t}
               onClick={() => {
@@ -1021,6 +1096,62 @@ export default function ServiceDetail() {
           />
         )}
 
+        {tab === 'settings' && serviceSettings && (
+          <div className="space-y-6">
+            <section className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-950">
+              <div className="mb-5">
+                <h3 className="text-lg font-semibold">Service settings</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Update the service information and artifact configuration.</p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium">Namespace</label>
+                  <input value={serviceSettings.namespace} disabled className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium">Service ID</label>
+                  <input value={serviceSettings.id} disabled className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1.5 block text-sm font-medium">Name</label>
+                  <input value={serviceSettings.name || ''} onChange={(e) => setServiceSettings({ ...serviceSettings, name: e.target.value })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1.5 block text-sm font-medium">Description</label>
+                  <textarea rows={3} value={serviceSettings.description || ''} onChange={(e) => setServiceSettings({ ...serviceSettings, description: e.target.value })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1.5 block text-sm font-medium">Executable path</label>
+                  <input value={serviceSettings.executable_path || ''} onChange={(e) => setServiceSettings({ ...serviceSettings, executable_path: e.target.value })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium">Repository namespace</label>
+                  <input value={serviceSettings.repository?.namespace || ''} onChange={(e) => setServiceSettings({ ...serviceSettings, repository: { ...serviceSettings.repository, namespace: e.target.value } })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium">Repository ID</label>
+                  <input value={serviceSettings.repository?.id || ''} onChange={(e) => setServiceSettings({ ...serviceSettings, repository: { ...serviceSettings.repository, id: e.target.value } })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1.5 block text-sm font-medium">Repository URL</label>
+                  <input value={serviceSettings.repository?.url || ''} onChange={(e) => setServiceSettings({ ...serviceSettings, repository: { ...serviceSettings.repository, url: e.target.value } })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                </div>
+              </div>
+              {settingsError && <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">{settingsError}</div>}
+              <div className="mt-5 flex justify-end">
+                <button type="button" onClick={saveServiceSettings} disabled={savingSettings || deletingService} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">{savingSettings ? 'Saving...' : 'Save changes'}</button>
+              </div>
+            </section>
+            <section className="rounded-xl border border-red-300 bg-white p-5 dark:border-red-900 dark:bg-gray-950">
+              <h3 className="text-lg font-semibold text-red-700 dark:text-red-400">Danger zone</h3>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Permanently delete this service. This action cannot be undone.</p>
+              <div className="mt-4 flex justify-end">
+                <button type="button" onClick={deleteService} disabled={deletingService || savingSettings} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">{deletingService ? 'Deleting...' : 'Delete service'}</button>
+              </div>
+            </section>
+          </div>
+        )}
+
         {tab === 'routing' && (
           <RoutingTab
             versions={routingResource.versions}
@@ -1039,6 +1170,34 @@ export default function ServiceDetail() {
         <Modal title="Job Data (Raw JSON)" onClose={() => setDataModal(null)}>
           <pre className="text-xs bg-gray-100 dark:bg-gray-900 p-3 rounded text-[11px] overflow-auto">{JSON.stringify(dataModal, null, 2)}</pre>
         </Modal>
+      )}
+
+      {/* Settings Saved Toast */}
+      {settingsSaved && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-3 fade-in duration-300">
+          <div className="flex items-start gap-3 max-w-sm rounded-xl border border-gray-800 bg-gray-900/95 px-4 py-3 shadow-lg backdrop-blur">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-900/40">
+              <svg className="h-4 w-4 text-green-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div className="text-sm leading-snug">
+              <div className="font-semibold text-gray-100">Settings saved</div>
+              <div className="text-gray-400">Service information has been updated.</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteSuccess && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-3 fade-in duration-300">
+          <div className="flex items-start gap-3 max-w-sm rounded-xl border border-gray-800 bg-gray-900/95 px-4 py-3 shadow-lg backdrop-blur">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-900/40">
+              <svg className="h-4 w-4 text-green-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <div className="text-sm leading-snug"><div className="font-semibold text-gray-100">Service deleted</div><div className="text-gray-400">Redirecting to services...</div></div>
+          </div>
+        </div>
       )}
 
       {/* Deploy Success Toast */}
