@@ -129,6 +129,7 @@ export default function WebsiteDetailPage() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [deletingWebsite, setDeletingWebsite] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [settings, setSettings] = useState<Website | null>(null);
 
   useEffect(() => {
@@ -176,7 +177,8 @@ export default function WebsiteDetailPage() {
       });
       const data = await response.json().catch(() => null);
       if (!response.ok || data?.error) throw new Error(getError(data, `HTTP ${response.status}`));
-      await router.push("/website/list");
+      setDeleteSuccess(true);
+      setTimeout(() => router.push("/website/list"), 1500);
     } catch (err: any) {
       setSettingsError(err?.message || "Failed to delete website");
     } finally {
@@ -366,6 +368,17 @@ export default function WebsiteDetailPage() {
               <div className="font-semibold text-gray-100">Settings saved</div>
               <div className="text-gray-400">Website information has been updated.</div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {deleteSuccess && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-3 fade-in duration-300">
+          <div className="flex items-start gap-3 max-w-sm rounded-xl border border-gray-800 bg-gray-900/95 px-4 py-3 shadow-lg backdrop-blur">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-900/40">
+              <svg className="h-4 w-4 text-green-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <div className="text-sm leading-snug"><div className="font-semibold text-gray-100">Website deleted</div><div className="text-gray-400">Redirecting to websites...</div></div>
           </div>
         </div>
       )}
