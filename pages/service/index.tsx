@@ -21,6 +21,14 @@ import RoutingTab from '../../components/ServiceTabs/RoutingTab';
 import { useApiEndpoint } from '../../context/ApiEndpointContext';
 
 
+type ArtifactRepository = {
+  id: string;
+  namespace: string;
+  name?: string;
+  source?: string;
+  url?: string;
+};
+
 type ShardForm = {
   id: string      // id
   shard_id: number   // index
@@ -870,6 +878,13 @@ export default function ServiceDetail() {
   const [serviceSettings, setServiceSettings] = useState<typeof service>(null);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [repositories, setRepositories] = useState<ArtifactRepository[]>([]);
+  const [repositoriesLoading, setRepositoriesLoading] = useState(false);
+  const [repositoriesError, setRepositoriesError] = useState<string | null>(null);
+  const [repositorySearch, setRepositorySearch] = useState("");
+  const [repositoryMenuOpen, setRepositoryMenuOpen] = useState(false);
+  const repositoryPickerRef = useRef<HTMLDivElement | null>(null);
+
 
   useEffect(() => {
     if (service) {
@@ -881,7 +896,59 @@ export default function ServiceDetail() {
   }, [service]);
 
 
-  const saveServiceSettings = async () => {
+  useEffect(() => {
+    if (!apiEndpoint || !serviceSettings?.namespace || serviceSettings.namespace === "*") {
+      setRepositories([]);
+      return;
+    }
+    let mounted = true;
+    const loadRepositories = async () => {
+      setRepositoriesLoading(true);
+      setRepositoriesError(null);
+      try {
+        const response = await fetch(`${apiEndpoint}/artifactd/repository`, {
+          headers: { "X-Namespace": serviceSettings.namespace },
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || data?.error) {
+          throw new Error(data?.error?.errors?.[0]?.message || data?.error?.message || data?.message || `HTTP ${response.status}`);
+        }
+        if (mounted) setRepositories(Array.isArray(data?.success) ? data.success : []);
+      } catch (err: any) {
+        if (mounted) setRepositoriesError(err?.message || "Failed to load artifact repositories");
+      } finally {
+        if (mounted) setRepositoriesLoading(false);
+      }
+    };
+    loadRepositories();
+    return () => { mounted = false; };
+  }, [apiEndpoint, serviceSettings?.namespace]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (repositoryPickerRef.current && !repositoryPickerRef.current.contains(event.target as Node)) {
+        setRepositoryMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredRepositories = useMemo(() => {
+    const query = repositorySearch.trim().toLowerCase();
+    if (!query) return repositories;
+    return repositories.filter((repository) =>
+      [repository.name, repository.id, repository.namespace, repository.source, repository.url]
+        .filter(Boolean).some((value) => String(value).toLowerCase().includes(query))
+    );
+  }, [repositories, repositorySearch]);
+
+  const selectedRepository = repositories.find((repository) =>
+    repository.namespace === serviceSettings?.repository?.namespace &&
+    repository.id === serviceSettings?.repository?.id
+  );
+
+    const saveServiceSettings = async () => {
     if (!serviceSettings || !apiEndpoint) return;
     setSettingsError(null);
     setSavingSettings(true);
@@ -1125,17 +1192,35 @@ export default function ServiceDetail() {
                   <label className="mb-1.5 block text-sm font-medium">Executable path</label>
                   <input value={serviceSettings.executable_path || ''} onChange={(e) => setServiceSettings({ ...serviceSettings, executable_path: e.target.value })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
                 </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium">Repository namespace</label>
-                  <input value={serviceSettings.repository?.namespace || ''} onChange={(e) => setServiceSettings({ ...serviceSettings, repository: { ...serviceSettings.repository, namespace: e.target.value } })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium">Repository ID</label>
-                  <input value={serviceSettings.repository?.id || ''} onChange={(e) => setServiceSettings({ ...serviceSettings, repository: { ...serviceSettings.repository, id: e.target.value } })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="mb-1.5 block text-sm font-medium">Repository URL</label>
-                  <input value={serviceSettings.repository?.url || ''} onChange={(e) => setServiceSettings({ ...serviceSettings, repository: { ...serviceSettings.repository, url: e.target.value } })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                <div ref={repositoryPickerRef} className="relative sm:col-span-2">
+                  <label className="mb-1.5 block text-sm font-medium">Artifact repository</label>
+                  <button type="button" onClick={() => setRepositoryMenuOpen((open) => !open)} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm dark:border-gray-700 dark:bg-gray-900" aria-expanded={repositoryMenuOpen}>
+                    <span className={selectedRepository ? "" : "text-gray-500"}>
+                      {selectedRepository ? `${selectedRepository.namespace}/${selectedRepository.name || selectedRepository.id}` : `${serviceSettings.repository?.namespace || ""}/${serviceSettings.repository?.id || "Select an artifact repository"}`}
+                    </span>
+                    <span className="float-right text-gray-500">⌄</span>
+                  </button>
+                  {repositoryMenuOpen && <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900">
+                    <div className="border-b border-gray-200 p-2 dark:border-gray-700">
+                      <input autoFocus value={repositorySearch} onChange={(e) => setRepositorySearch(e.target.value)} placeholder="Search name, ID, namespace, or source..." className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                    </div>
+                    <div className="max-h-64 overflow-y-auto p-1">
+                      {repositoriesLoading && <div className="px-3 py-4 text-sm text-gray-500">Loading artifact repositories...</div>}
+                      {!repositoriesLoading && repositoriesError && <div className="px-3 py-3 text-sm text-red-600">{repositoriesError}</div>}
+                      {!repositoriesLoading && !repositoriesError && filteredRepositories.length === 0 && <div className="px-3 py-4 text-sm text-gray-500">No matching repositories found.</div>}
+                      {!repositoriesLoading && !repositoriesError && filteredRepositories.map((repository) => {
+                        const selected = selectedRepository?.namespace === repository.namespace && selectedRepository?.id === repository.id;
+                        return <button key={`${repository.namespace}/${repository.id}`} type="button" onClick={() => {
+                          setServiceSettings({ ...serviceSettings, repository: { url: repository.url || "", namespace: repository.namespace, id: repository.id } });
+                          setRepositorySearch("");
+                          setRepositoryMenuOpen(false);
+                        }} className={`block w-full rounded-md px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${selected ? "bg-blue-50 dark:bg-blue-950/40" : ""}`}>
+                          <span className="block text-sm font-medium">{repository.name || repository.id}</span>
+                          <span className="mt-0.5 block text-xs text-gray-500">{repository.namespace}/{repository.id}{repository.source ? ` · ${repository.source}` : ""}</span>
+                        </button>;
+                      })}
+                    </div>
+                  </div>}
                 </div>
               </div>
               {settingsError && <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">{settingsError}</div>}
