@@ -6,6 +6,7 @@ import Link from "next/link";
 import Modal from "../../components/Modal";
 import { useNamespace } from "../../context/NamespaceContext";
 import { useApiEndpoint } from "../../context/ApiEndpointContext";
+import { formatLocalDateTime, formatRelativeTime } from "../../lib/time";
 
 type Website = {
   namespace: string; host_address: string; name: string; description: string;
@@ -187,7 +188,7 @@ export default function WebsiteDetailPage() {
         {website.description && <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">{website.description}</p>}
         <div className="grid gap-4 text-sm sm:grid-cols-2">
           <div><div className="text-xs text-gray-500">Artifact ID</div><div className="mt-1 font-mono">{website.artifact_id || "—"}</div></div>
-<div><div className="text-xs text-gray-500">Published</div><div className="mt-1">{website.published_at ? new Date(website.published_at).toLocaleString() : "—"}</div></div>
+<div><div className="text-xs text-gray-500">Published</div><div className="mt-1">{website.published_at ? <span title={formatLocalDateTime(website.published_at)}>{formatRelativeTime(website.published_at)}</span> : "—"}</div></div>
           <div><div className="text-xs text-gray-500">Latest deployment</div><div className="mt-1"><span className={`rounded px-2 py-1 text-xs font-medium ${statusClass(statusSummary)}`}>{statusSummary}</span></div></div>
         </div>
         <div className="mt-5 flex justify-end"><button onClick={openDeploy} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Deploy website</button></div>
@@ -201,7 +202,7 @@ export default function WebsiteDetailPage() {
               <div className="font-mono text-sm">{job.id}</div>
               <span className={`rounded px-2 py-1 text-xs font-medium ${statusClass(job.status)}`}>{job.status}</span>
             </div>
-            <div className="mt-2 text-xs text-gray-500">Published: {job.published_at ? new Date(job.published_at).toLocaleString() : "—"}{job.finished_at ? ` · Finished: ${new Date(job.finished_at).toLocaleString()}` : ""}</div>
+            <div className="mt-2 flex flex-wrap gap-x-3 text-xs text-gray-500">{job.published_at && <span title={formatLocalDateTime(job.published_at)}>Published {formatRelativeTime(job.published_at)}</span>}{job.finished_at && <span title={formatLocalDateTime(job.finished_at)}>Finished {formatRelativeTime(job.finished_at)}</span>}</div>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">{Object.entries(job.result || {}).map(([host, result]) => (
               <div key={host} className="rounded-md bg-gray-50 p-3 text-sm dark:bg-gray-900">
                 <div className="flex items-center justify-between gap-2"><span className="font-medium">{host}</span><span className={`rounded px-2 py-0.5 text-xs ${statusClass(result.status)}`}>{result.status}</span></div>
