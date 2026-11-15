@@ -32,7 +32,7 @@ export default function SettingsPage() {
     }
 
     setApiEndpoint(value);
-    setEndpoint(value.replace(/\\/+$/, ''));
+    setEndpoint(value.replace(/\/+$/, ''));
     setError('');
     setSaved(true);
   };
@@ -76,7 +76,7 @@ export default function SettingsPage() {
           <div className="mt-4 flex justify-end">
             <button
               type="submit"
-              disabled={!endpoint.trim() || endpoint.trim().replace(/\\/+$/, '') === apiEndpoint}
+              disabled={!endpoint.trim() || endpoint.trim().replace(/\/+$/, '') === apiEndpoint}
               className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
             >
               Save changes
