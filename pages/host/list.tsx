@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useNamespace } from '../../context/NamespaceContext';
 import Modal from '../../components/Modal';
 import { useApiEndpoint } from '../../context/ApiEndpointContext';
+import { formatLocalDateTime, formatRelativeTime } from '../../lib/time';
 
 type ClickhouseConfig = {
   address?: string;
@@ -85,7 +86,7 @@ export default function HostPage() {
                 <div className="text-lg font-semibold">{h.host}</div>
                 <div className="text-sm text-gray-600 dark:text-gray-300">{h.os} • {h.architecture}</div>
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{h.published_at ? new Date(h.published_at).toLocaleString() : ''}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{h.published_at ? <span title={formatLocalDateTime(h.published_at)}>{formatRelativeTime(h.published_at)}</span> : '—'}</div>
             </div>
             <div className="mt-3 text-sm text-gray-700 dark:text-gray-200">{h.fqdn}</div>
           </div>
@@ -99,7 +100,7 @@ export default function HostPage() {
             <div className="text-sm mb-2">Host: <strong>{selected.host}</strong></div>
             <div className="text-sm mb-2">OS / Arch: {selected.os} / {selected.architecture}</div>
             <div className="text-sm mb-2">FQDN: {selected.fqdn}</div>
-            <div className="text-sm mb-2">Published: {selected.published_at}</div>
+            <div className="text-sm mb-2">Published: {selected.published_at ? `${formatRelativeTime(selected.published_at)} (${formatLocalDateTime(selected.published_at)})` : '—'}</div>
           </div>
           <div>
             <h4 className="font-medium mb-2">Raft Config</h4>
