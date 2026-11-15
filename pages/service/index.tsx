@@ -53,6 +53,7 @@ export default function ServiceDetail() {
   const [selectedEnvForDeploy, setSelectedEnvForDeploy] = useState(0);
   const [selectedSecretForDeploy, setSelectedSecretForDeploy] = useState(0);
   const [hostsForDeploy, setHostsForDeploy] = useState<string[]>([]);
+  const [availableHosts, setAvailableHosts] = useState<string[]>([]);
   const [lastSuccessfulJob, setLastSuccessfulJob] = useState<ServiceJob | null>(null);
   const [hasNewBuild, setHasNewBuild] = useState(false);
   const [latestBuild, setLatestBuild] = useState<Build | null>(null);
@@ -202,13 +203,35 @@ export default function ServiceDetail() {
         `${apiEndpoint}/deployd/successful-job?id=${id}`,
         { headers: { "X-Namespace": service.namespace } }
       );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const successfulJobs = Array.isArray(data.success) ? data.success : [];
       const svcSuccess =
         successfulJobs.find((j: any) => j.request?.service?.id === service.id) ||
         null;
 
+      if (!mounted) return;
       setLastSuccessfulJob(svcSuccess);
+
+      let hosts: string[] = Array.isArray(svcSuccess?.target)
+        ? svcSuccess.target.map((target: any) =>
+            typeof target === "string" ? target : target?.host
+          ).filter((host: any): host is string => typeof host === "string" && host.length > 0)
+        : [];
+
+      if (hosts.length === 0) {
+        const hostRes = await fetch(`${apiEndpoint}/deployd/host`, {
+          headers: { "X-Namespace": "deployd" }
+        });
+        if (!hostRes.ok) throw new Error(`HTTP ${hostRes.status}`);
+        const hostData = await hostRes.json();
+        const hostList = Array.isArray(hostData.success) ? hostData.success : [];
+        hosts = hostList
+          .map((host: any) => typeof host === "string" ? host : host?.host)
+          .filter((host: any): host is string => typeof host === "string" && host.length > 0);
+      }
+
+      if (mounted) setAvailableHosts(Array.from(new Set(hosts)).sort());
     };
 
     fetchSecrets();
@@ -342,6 +365,7 @@ export default function ServiceDetail() {
     namespace: service?.namespace || 'deployd',
     service: service?.id!,
     initialVersions: secrets,
+    hosts: availableHosts,
     refetch: async () => {
       if (!service?.namespace) return;
 
@@ -388,6 +412,7 @@ export default function ServiceDetail() {
     namespace: service?.namespace || 'deployd',
     service: service?.id!,
     initialVersions: envs,
+    hosts: availableHosts,
     refetch: async () => {
       if (!service?.namespace) return;
 
@@ -969,6 +994,9 @@ export default function ServiceDetail() {
             isSubmitting={envResource.isSubmitting}
             emptyMessage="No environment variables found for this service"
             error={envResource.error}
+            hosts={envResource.hosts}
+            selectedHost={envResource.selectedHost}
+            onSelectHost={envResource.selectHost}
           />
         )}
 
@@ -989,6 +1017,9 @@ export default function ServiceDetail() {
             isSubmitting={secretResource.isSubmitting}
             emptyMessage="No secrets found for this service"
             error={secretResource.error}
+            hosts={secretResource.hosts}
+            selectedHost={secretResource.selectedHost}
+            onSelectHost={secretResource.selectHost}
           />
         )}
 
