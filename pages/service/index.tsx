@@ -238,7 +238,9 @@ export default function ServiceDetail() {
     fetchEnvs();
     fetchRoutings();
     fetchJobs();
-    fetchLastSuccessfulJob();
+    fetchLastSuccessfulJob().catch((err: any) => {
+      if (mounted) setError(err?.message || "Failed to fetch available hosts");
+    });
 
     return () => {
       mounted = false;
