@@ -262,7 +262,7 @@ export default function DeploymentTab({
       "
               >
                 {jobs.map((j, idx) => (
-                  <option key={idx} value={idx}>
+                  <option key={idx} value={idx} title={formatLocalDateTime(j.published_at)}>
                     {j.id} • {formatRelativeTime(j.published_at)} • {j.status || "UNKNOWN"}
                   </option>
                 ))}
