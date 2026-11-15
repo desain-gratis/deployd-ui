@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useNamespace } from '../../context/NamespaceContext';
 import { useApiEndpoint } from '../../context/ApiEndpointContext';
+import { formatLocalDateTime, formatRelativeTime } from '../../lib/time';
 
 type Repository = {
   id: string;
@@ -70,7 +71,7 @@ export default function ArtifactPage() {
                 <div className="text-lg font-semibold">{r.name ?? r.id}</div>
                 <div className="text-sm text-gray-600 dark:text-gray-300">{r.source}</div>
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{r.published_at ? new Date(r.published_at).toLocaleString() : ''}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{r.published_at ? <span title={formatLocalDateTime(r.published_at)}>{formatRelativeTime(r.published_at)}</span> : '—'}</div>
             </div>
           </Link>
         ))}
