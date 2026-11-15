@@ -718,16 +718,25 @@ export default function ServiceDetail() {
       // Reuse already-fetched state
       setReleaseBuilds(builds);
 
-      // Hosts always come from the host registry so new hosts are available.
-      const hRes = await fetch(`${apiEndpoint}/deployd/host`, {
-        headers: { "X-Namespace": "deployd" },
-      });
-      if (!hRes.ok) throw new Error(`HTTP ${hRes.status}`);
-      const hData = await hRes.json();
-      const hostList = Array.isArray(hData.host) ? hData.host : [];
-      const hosts = hostList
-        .map((h: any) => typeof h === "string" ? h : h?.host)
-        .filter((host: any): host is string => typeof host === "string" && host.length > 0);
+      // Hosts: prefer last successful job
+      let hosts: string[] = [];
+
+      if (
+        lastSuccessfulJob &&
+        Array.isArray(lastSuccessfulJob.target) &&
+        lastSuccessfulJob.target.length > 0
+      ) {
+        hosts = lastSuccessfulJob.target.map((t: any) => t.host || t);
+      } else {
+        // Only fetch hosts if absolutely needed
+        const hRes = await fetch(
+          `${apiEndpoint}/deployd/host`,
+          { headers: { "X-Namespace": "deployd" } } // hardcoded
+        );
+        const hData = await hRes.json();
+        const hostList = Array.isArray(hData.success) ? hData.success : [];
+        hosts = hostList.map((h: any) => h.host || h);
+      }
       setHostsForDeploy(hosts);
 
       // Use suggested indices already computed
