@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Modal from "../../components/Modal";
@@ -11,6 +11,9 @@ import { formatLocalDateTime, formatRelativeTime } from "../../lib/time";
 type Website = {
   namespace: string; host_address: string; name: string; description: string;
   artifact_id: string; custom_404_page?: string; listen_address?: string; url: string; published_at: string;
+};
+type ArtifactRepository = {
+  id: string; namespace: string; name?: string; source?: string; url?: string;
 };
 type Build = { id: string; name?: string; branch?: string; commit_id?: string; actor?: string; repository_id?: string; published_at?: string };
 type HostUpdateResult = { status: string; error?: string; message: string; host_id: string; job_id: string; time?: string };
@@ -132,12 +135,68 @@ export default function WebsiteDetailPage() {
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [settings, setSettings] = useState<Website | null>(null);
+  const [repositories, setRepositories] = useState<ArtifactRepository[]>([]);
+  const [repositoriesLoading, setRepositoriesLoading] = useState(false);
+  const [repositoriesError, setRepositoriesError] = useState<string | null>(null);
+  const [repositorySearch, setRepositorySearch] = useState("");
+  const [repositoryMenuOpen, setRepositoryMenuOpen] = useState(false);
+  const repositoryPickerRef = useRef<HTMLDivElement | null>(null);
+
 
   useEffect(() => {
     if (website) setSettings({ ...website });
   }, [website]);
 
-  const saveWebsiteSettings = async () => {
+  useEffect(() => {
+    if (!apiEndpoint || !settings?.namespace || settings.namespace === "*") {
+      setRepositories([]);
+      return;
+    }
+    let mounted = true;
+    const loadRepositories = async () => {
+      setRepositoriesLoading(true);
+      setRepositoriesError(null);
+      try {
+        const response = await fetch(`${apiEndpoint}/artifactd/repository`, {
+          headers: { "X-Namespace": settings.namespace },
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || data?.error) {
+          throw new Error(getError(data, `HTTP ${response.status}`));
+        }
+        if (mounted) setRepositories(Array.isArray(data?.success) ? data.success : []);
+      } catch (err: any) {
+        if (mounted) setRepositoriesError(err?.message || "Failed to load artifact repositories");
+      } finally {
+        if (mounted) setRepositoriesLoading(false);
+      }
+    };
+    loadRepositories();
+    return () => { mounted = false; };
+  }, [apiEndpoint, settings?.namespace]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (repositoryPickerRef.current && !repositoryPickerRef.current.contains(event.target as Node)) {
+        setRepositoryMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredRepositories = useMemo(() => {
+    const query = repositorySearch.trim().toLowerCase();
+    if (!query) return repositories;
+    return repositories.filter((repository) =>
+      [repository.name, repository.id, repository.namespace, repository.source, repository.url]
+        .filter(Boolean).some((value) => String(value).toLowerCase().includes(query))
+    );
+  }, [repositories, repositorySearch]);
+
+  const selectedRepository = repositories.find((repository) => repository.id === settings?.artifact_id);
+
+    const saveWebsiteSettings = async () => {
     if (!settings || !apiEndpoint) return;
     setSettingsError(null);
     setSavingSettings(true);
@@ -328,9 +387,26 @@ export default function WebsiteDetailPage() {
               <label className="mb-1.5 block text-sm font-medium">Description</label>
               <textarea rows={3} value={settings.description || ""} onChange={(e) => setSettings({ ...settings, description: e.target.value })} className={inputClass} />
             </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium">Artifact ID</label>
-              <input value={settings.artifact_id || ""} onChange={(e) => setSettings({ ...settings, artifact_id: e.target.value })} className={inputClass} />
+            <div ref={repositoryPickerRef} className="relative">
+              <label className="mb-1.5 block text-sm font-medium">Artifact repository</label>
+              <button type="button" onClick={() => setRepositoryMenuOpen((open) => !open)} className={`${inputClass} flex items-center justify-between gap-3 text-left`} aria-expanded={repositoryMenuOpen}>
+                <span className={selectedRepository ? "truncate" : "text-gray-500"}>
+                  {selectedRepository ? `${selectedRepository.namespace}/${selectedRepository.name || selectedRepository.id}` : settings.artifact_id || "Select an artifact repository"}
+                </span>
+                <span className="text-gray-500">⌄</span>
+              </button>
+              {repositoryMenuOpen && <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900">
+                <div className="border-b border-gray-200 p-2 dark:border-gray-700"><input autoFocus value={repositorySearch} onChange={(e) => setRepositorySearch(e.target.value)} placeholder="Search name, ID, namespace, or source..." className={inputClass} /></div>
+                <div className="max-h-64 overflow-y-auto p-1">
+                  {repositoriesLoading && <div className="px-3 py-4 text-sm text-gray-500">Loading repositories...</div>}
+                  {repositoriesError && <div className="px-3 py-3 text-sm text-red-600">{repositoriesError}</div>}
+                  {!repositoriesLoading && !repositoriesError && filteredRepositories.length === 0 && <div className="px-3 py-4 text-sm text-gray-500">No matching repositories found.</div>}
+                  {!repositoriesLoading && !repositoriesError && filteredRepositories.map((repository) => <button key={`${repository.namespace}/${repository.id}`} type="button" onClick={() => { setSettings({ ...settings, artifact_id: repository.id }); setRepositorySearch(""); setRepositoryMenuOpen(false); }} className={`block w-full rounded-md px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${settings.artifact_id === repository.id ? "bg-blue-50 dark:bg-blue-950/40" : ""}`}>
+                    <span className="block text-sm font-medium">{repository.name || repository.id}</span>
+                    <span className="mt-0.5 block text-xs text-gray-500">{repository.namespace}/{repository.id}{repository.source ? ` · ${repository.source}` : ""}</span>
+                  </button>)}
+                </div>
+              </div>}
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium">Listen address</label>
