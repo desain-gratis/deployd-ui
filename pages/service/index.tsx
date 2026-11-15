@@ -198,6 +198,18 @@ export default function ServiceDetail() {
       }
     };
 
+    const fetchAvailableHosts = async () => {
+      const res = await fetch(`${apiEndpoint}/deployd/host`, {
+        headers: { "X-Namespace": "deployd" },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const hostList = Array.isArray(data.host) ? data.host : [];
+      const hosts = hostList
+        .map((host: any) => typeof host === "string" ? host : host?.host)
+        .filter((host: any): host is string => typeof host === "string" && host.length > 0);
+      if (mounted) setAvailableHosts(Array.from(new Set(hosts)).sort());
+    };
     const fetchLastSuccessfulJob = async () => {
       const res = await fetch(
         `${apiEndpoint}/deployd/successful-job?id=${id}`,
@@ -213,24 +225,6 @@ export default function ServiceDetail() {
       if (!mounted) return;
       setLastSuccessfulJob(svcSuccess);
 
-      let hosts: string[] = Array.isArray(svcSuccess?.target)
-        ? svcSuccess.target.map((target: any) =>
-            typeof target === "string" ? target : target?.host
-          ).filter((host: any): host is string => typeof host === "string" && host.length > 0)
-        : [];
-
-      if (hosts.length === 0) {
-        const hostRes = await fetch(`${apiEndpoint}/deployd/host`, {
-          headers: { "X-Namespace": "deployd" }
-        });
-        if (!hostRes.ok) throw new Error(`HTTP ${hostRes.status}`);
-        const hostData = await hostRes.json();
-        const hostList = Array.isArray(hostData.success) ? hostData.success : [];
-        hosts = hostList
-          .map((host: any) => typeof host === "string" ? host : host?.host)
-          .filter((host: any): host is string => typeof host === "string" && host.length > 0);
-      }
-
       if (mounted) setAvailableHosts(Array.from(new Set(hosts)).sort());
     };
 
@@ -239,6 +233,9 @@ export default function ServiceDetail() {
     fetchRoutings();
     fetchJobs();
     fetchLastSuccessfulJob().catch((err: any) => {
+      if (mounted) setError(err?.message || "Failed to fetch available hosts");
+    });
+    fetchAvailableHosts().catch((err: any) => {
       if (mounted) setError(err?.message || "Failed to fetch available hosts");
     });
 
@@ -721,26 +718,16 @@ export default function ServiceDetail() {
       // Reuse already-fetched state
       setReleaseBuilds(builds);
 
-      // Hosts: prefer last successful job
-      let hosts: string[] = [];
-
-      if (
-        lastSuccessfulJob &&
-        Array.isArray(lastSuccessfulJob.target) &&
-        lastSuccessfulJob.target.length > 0
-      ) {
-        hosts = lastSuccessfulJob.target.map((t: any) => t.host || t);
-      } else {
-        // Only fetch hosts if absolutely needed
-        const hRes = await fetch(
-          `${apiEndpoint}/deployd/host`,
-          { headers: { "X-Namespace": "deployd" } } // hardcoded
-        );
-        const hData = await hRes.json();
-        const hostList = Array.isArray(hData.success) ? hData.success : [];
-        hosts = hostList.map((h: any) => h.host || h);
-      }
-
+      // Hosts always come from the host registry so new hosts are available.
+      const hRes = await fetch(`${apiEndpoint}/deployd/host`, {
+        headers: { "X-Namespace": "deployd" },
+      });
+      if (!hRes.ok) throw new Error(`HTTP ${hRes.status}`);
+      const hData = await hRes.json();
+      const hostList = Array.isArray(hData.host) ? hData.host : [];
+      const hosts = hostList
+        .map((h: any) => typeof h === "string" ? h : h?.host)
+        .filter((host: any): host is string => typeof host === "string" && host.length > 0);
       setHostsForDeploy(hosts);
 
       // Use suggested indices already computed
