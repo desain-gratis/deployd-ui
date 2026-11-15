@@ -128,6 +128,7 @@ export default function WebsiteDetailPage() {
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [savingSettings, setSavingSettings] = useState(false);
   const [deletingWebsite, setDeletingWebsite] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
   const [settings, setSettings] = useState<Website | null>(null);
 
   useEffect(() => {
@@ -153,6 +154,8 @@ export default function WebsiteDetailPage() {
       } else {
         setWebsite(settings);
       }
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 5000);
     } catch (err: any) {
       setSettingsError(err?.message || "Failed to save website settings");
     } finally {
@@ -350,6 +353,22 @@ export default function WebsiteDetailPage() {
       </div>}
 
       </>}
+
+      {settingsSaved && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-3 fade-in duration-300">
+          <div className="flex items-start gap-3 max-w-sm rounded-xl border border-gray-800 bg-gray-900/95 px-4 py-3 shadow-lg backdrop-blur">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-900/40">
+              <svg className="h-4 w-4 text-green-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div className="text-sm leading-snug">
+              <div className="font-semibold text-gray-100">Settings saved</div>
+              <div className="text-gray-400">Website information has been updated.</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showDeploy && <Modal title={`Deploy ${website?.host_address || "website"}`} onClose={() => !deploying && setShowDeploy(false)}>
         <div className="space-y-4">
