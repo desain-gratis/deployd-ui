@@ -10,7 +10,7 @@ import JobLogTab from '../../components/ServiceTabs/JobLogTab';
 import ReleasesTab from '../../components/ServiceTabs/ReleasesTab';
 import { useNamespace } from '../../context/NamespaceContext';
 import Modal from '../../components/Modal';
-import { formatRelativeTime } from '../../lib/time';
+import { formatLocalDateTime, formatRelativeTime } from '../../lib/time';
 import ServiceHeaderCard from '../../components/ServiceDetail/ServiceHeaderCard';
 import { Service, KV, ServiceJob, Build, RaftShardConfig } from '../../types/service';
 import KeyValueEditor from '../../components/ServiceTabs/KeyValueEditor';
@@ -569,8 +569,9 @@ export default function ServiceDetail() {
                 .join(",");
             };
 
+            const timestamp = new Date().toISOString();
             const logMessage = [
-              new Date().toLocaleTimeString(),
+              formatLocalDateTime(timestamp),
               `job=${job.id}`,
               `status=${job.status}`,
               `configure=${formatStatusMap(job.configure_host_job?.status)}`,
@@ -580,7 +581,7 @@ export default function ServiceDetail() {
               ...prev,
               {
                 message: logMessage,
-                timestamp: new Date().toISOString(),
+                timestamp,
               },
             ]);
 

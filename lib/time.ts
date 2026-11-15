@@ -18,46 +18,54 @@ export function formatLocalDateTime(dateString?: string): string {
     const date = parseServerDate(dateString);
     if (!date) return '-';
 
-    return date.toLocaleString(undefined, {
+    return new Intl.DateTimeFormat(undefined, {
         year: 'numeric',
         month: 'short',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-    });
+        timeZoneName: 'short',
+    }).format(date);
 }
 
 /**
- * Format relative time (e.g. 5m ago, 2h ago)
+ * Format relative time in the browser's locale (e.g. 5 minutes ago, tomorrow).
+ * Handles future timestamps as well as past timestamps.
  */
 export function formatRelativeTime(dateString?: string): string {
     const date = parseServerDate(dateString);
     if (!date) return '-';
 
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffSec = Math.floor(diffMs / 1000);
+    const diffSeconds = (date.getTime() - Date.now()) / 1000;
+    const absSeconds = Math.abs(diffSeconds);
+    if (absSeconds < 5) return 'just now';
 
-    if (diffSec < 5) return 'just now';
-    if (diffSec < 60) return `${diffSec}s ago`;
+    let value: number;
+    let unit: Intl.RelativeTimeFormatUnit;
 
-    const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${diffMin}m ago`;
+    if (absSeconds < 60) {
+        value = Math.round(diffSeconds);
+        unit = 'second';
+    } else if (absSeconds < 60 * 60) {
+        value = Math.round(diffSeconds / 60);
+        unit = 'minute';
+    } else if (absSeconds < 24 * 60 * 60) {
+        value = Math.round(diffSeconds / (60 * 60));
+        unit = 'hour';
+    } else if (absSeconds < 30 * 24 * 60 * 60) {
+        value = Math.round(diffSeconds / (24 * 60 * 60));
+        unit = 'day';
+    } else if (absSeconds < 365 * 24 * 60 * 60) {
+        value = Math.round(diffSeconds / (30 * 24 * 60 * 60));
+        unit = 'month';
+    } else {
+        value = Math.round(diffSeconds / (365 * 24 * 60 * 60));
+        unit = 'year';
+    }
 
-    const diffHour = Math.floor(diffMin / 60);
-    if (diffHour < 24) return `${diffHour}h ago`;
-
-    const diffDay = Math.floor(diffHour / 24);
-    if (diffDay < 30) return `${diffDay}d ago`;
-
-    const diffMonth = Math.floor(diffDay / 30);
-    if (diffMonth < 12) return `${diffMonth}mo ago`;
-
-    const diffYear = Math.floor(diffMonth / 12);
-    return `${diffYear}y ago`;
+    return new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' }).format(value, unit);
 }
-
 
 export function formatTimeDifference(startDateString?: string, endDateString?: string): string {
     const startDate = parseServerDate(startDateString);
