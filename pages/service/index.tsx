@@ -204,7 +204,7 @@ export default function ServiceDetail() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const hostList = Array.isArray(data.host) ? data.host : [];
+      const hostList = Array.isArray(data.success) ? data.success : [];
       const hosts = hostList
         .map((host: any) => typeof host === "string" ? host : host?.host)
         .filter((host: any): host is string => typeof host === "string" && host.length > 0);
@@ -225,7 +225,6 @@ export default function ServiceDetail() {
       if (!mounted) return;
       setLastSuccessfulJob(svcSuccess);
 
-      if (mounted) setAvailableHosts(Array.from(new Set(hosts)).sort());
     };
 
     fetchSecrets();
