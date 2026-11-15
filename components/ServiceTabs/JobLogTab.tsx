@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React from 'react';
+import { formatLocalDateTime, formatRelativeTime } from '../../lib/time';
 
 type Props = {
   jobLogs: Array<{ message: any; timestamp: string }>;
@@ -24,7 +25,13 @@ export default function JobLogTab({ jobLogs, setJobLogs }: Props) {
         <div className="bg-gray-900 dark:bg-black text-gray-100 p-4 rounded font-mono text-[11px] overflow-auto max-h-[600px] border border-gray-700">
           <div className="space-y-0">
             {[...jobLogs].reverse().map((log, idx) => (
-              <div key={idx} className="flex font-mono text-[12px]">
+              <div key={idx} className="flex flex-wrap items-center font-mono text-[12px]">
+                <span
+                  title={formatLocalDateTime(log.timestamp)}
+                  className="px-2 whitespace-nowrap text-gray-500 underline decoration-dotted cursor-help"
+                >
+                  {formatRelativeTime(log.timestamp)}
+                </span>
                 {log.message.split(" | ").map((segment: string, i: number) => {
                   const colors = [
                     "text-gray-400",     // time
