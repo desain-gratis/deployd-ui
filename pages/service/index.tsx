@@ -10,7 +10,7 @@ import JobLogTab from '../../components/ServiceTabs/JobLogTab';
 import ReleasesTab from '../../components/ServiceTabs/ReleasesTab';
 import { useNamespace } from '../../context/NamespaceContext';
 import Modal from '../../components/Modal';
-import { formatRelativeTime } from '../../lib/time';
+import { formatLocalDateTime, formatRelativeTime } from '../../lib/time';
 import ServiceHeaderCard from '../../components/ServiceDetail/ServiceHeaderCard';
 import { Service, KV, ServiceJob, Build, RaftShardConfig } from '../../types/service';
 import KeyValueEditor from '../../components/ServiceTabs/KeyValueEditor';
