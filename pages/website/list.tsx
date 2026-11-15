@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useNamespace } from "../../context/NamespaceContext";
 import { useApiEndpoint } from "../../context/ApiEndpointContext";
+import { formatLocalDateTime, formatRelativeTime } from "../../lib/time";
 
 type Website = {
   namespace: string;
@@ -91,7 +92,7 @@ export default function WebsiteListPage() {
                 <div className="truncate text-lg font-semibold">{website.name || website.host_address}</div>
                 <div className="mt-1 break-all text-sm text-blue-600 dark:text-blue-400">{website.host_address}</div>
               </div>
-              <div className="shrink-0 text-xs text-gray-500">{website.published_at ? new Date(website.published_at).toLocaleString() : ""}</div>
+              <div className="shrink-0 text-xs text-gray-500">{website.published_at ? <span title={formatLocalDateTime(website.published_at)}>{formatRelativeTime(website.published_at)}</span> : "—"}</div>
             </div>
             {website.description && <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">{website.description}</p>}
             <div className="mt-3 break-all text-xs text-gray-500 dark:text-gray-400">Artifact: {website.artifact_id || "—"}</div>
