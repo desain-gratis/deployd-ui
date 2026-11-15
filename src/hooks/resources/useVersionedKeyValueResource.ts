@@ -11,6 +11,7 @@ type Options = {
     service: string;
     initialVersions: KV[];
     refetch: () => Promise<void>;
+    hosts?: string[];
 };
 
 export function useVersionedKeyValueResource({
@@ -19,6 +20,7 @@ export function useVersionedKeyValueResource({
     service,
     initialVersions,
     refetch,
+    hosts = [],
 }: Options) {
     const [versions, setVersions] =
         useState<KV[]>(initialVersions);
@@ -37,6 +39,8 @@ export function useVersionedKeyValueResource({
         useState<string | null>(null);
 
     const [format, setFormat] = useState<DataFormat>("kv");
+    const [selectedHost, setSelectedHost] = useState("");
+
 
     // Keep versions synced from parent
     useEffect(() => {
@@ -54,12 +58,15 @@ export function useVersionedKeyValueResource({
     useEffect(() => {
         if (!selectedVersion) return;
 
-        const kv = Object.entries(selectedVersion.value ?? {}).map(
+        const value = selectedHost
+            ? selectedVersion.value_by_host?.[selectedHost] ?? {}
+            : selectedVersion.value ?? {};
+        const kv = Object.entries(value).map(
             ([key, value]) => ({ key, value })
         );
 
         setEntries(kv);
-    }, [selectedVersion]);
+    }, [selectedVersion, selectedHost]);
 
     const currentValue = useMemo(() => {
         return entries.reduce<Record<string, any>>((acc, e) => {
@@ -68,8 +75,12 @@ export function useVersionedKeyValueResource({
         }, {});
     }, [entries]);
 
-    const selectedValue = selectedVersion?.value ?? {};
-    const latestValue = latestVersion?.value ?? {};
+    const selectedValue = selectedHost
+        ? selectedVersion?.value_by_host?.[selectedHost] ?? {}
+        : selectedVersion?.value ?? {};
+    const latestValue = selectedHost
+        ? latestVersion?.value_by_host?.[selectedHost] ?? {}
+        : latestVersion?.value ?? {};
 
     const isLatestSelected = selectedVersionIndex === 0;
 
@@ -108,9 +119,15 @@ export function useVersionedKeyValueResource({
                 service: service,
                 version: undefined, // overwrite
                 id: "", // overwrite
-                value: {
-                    ...currentValue,
-                },
+                value: selectedHost
+                    ? { ...(latestVersion?.value ?? {}) }
+                    : { ...currentValue },
+                value_by_host: selectedHost
+                    ? {
+                        ...(latestVersion?.value_by_host ?? {}),
+                        [selectedHost]: { ...currentValue },
+                    }
+                    : { ...(latestVersion?.value_by_host ?? {}) },
                 published_at: getStandardizedTimestamp(),
             }
 
@@ -185,6 +202,10 @@ export function useVersionedKeyValueResource({
 
         format,
         setFormat,
+
+        hosts,
+        selectedHost,
+        selectHost: setSelectedHost,
 
         entries,
         updateEntry,
