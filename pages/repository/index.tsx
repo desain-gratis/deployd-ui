@@ -7,6 +7,7 @@ import FlexSearch from 'flexsearch';
 import Modal from '../../components/Modal';
 import ReleasesTable from '../../components/ServiceTabs/ReleasesTable';
 import { useApiEndpoint } from '../../context/ApiEndpointContext';
+import { formatLocalDateTime, formatRelativeTime } from '../../lib/time';
 
 type Repository = {
   id: string;
@@ -163,7 +164,7 @@ export default function RepositoryDetail() {
           <div className="p-4 rounded bg-gray-50 dark:bg-gray-800">
             <div className="text-lg font-semibold">{repo.name ?? repo.id}</div>
             <div className="text-sm text-gray-600 dark:text-gray-300">Source: {repo.source}</div>
-            <div className="text-sm text-gray-500 mt-2">Published: {repo.published_at}</div>
+            <div className="text-sm text-gray-500 mt-2">Published: {repo.published_at ? <span title={formatLocalDateTime(repo.published_at)}>{formatRelativeTime(repo.published_at)}</span> : '—'}</div>
           </div>
         </div>
       ) : (
