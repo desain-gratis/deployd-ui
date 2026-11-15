@@ -130,6 +130,7 @@ export default function WebsiteDetailPage() {
   const [deletingWebsite, setDeletingWebsite] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [settings, setSettings] = useState<Website | null>(null);
 
   useEffect(() => {
@@ -167,7 +168,7 @@ export default function WebsiteDetailPage() {
   const deleteWebsite = async () => {
     if (!website || !apiEndpoint) return;
     if (!window.confirm(`Delete website "${website.host_address}"? This action cannot be undone.`)) return;
-    setSettingsError(null);
+    setDeleteError(null);
     setDeletingWebsite(true);
     try {
       const response = await fetch(`${apiEndpoint}/deployd/website`, {
@@ -180,7 +181,7 @@ export default function WebsiteDetailPage() {
       setDeleteSuccess(true);
       setTimeout(() => router.push("/website/list"), 1500);
     } catch (err: any) {
-      setSettingsError(err?.message || "Failed to delete website");
+      setDeleteError(err?.message || "Failed to delete website");
     } finally {
       setDeletingWebsite(false);
     }
@@ -348,6 +349,7 @@ export default function WebsiteDetailPage() {
         <section className="rounded-xl border border-red-300 bg-white p-5 dark:border-red-900 dark:bg-gray-950">
           <h3 className="text-lg font-semibold text-red-700 dark:text-red-400">Danger zone</h3>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Permanently delete this website. This action cannot be undone.</p>
+          {deleteError && <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">{deleteError}</div>}
           <div className="mt-4 flex justify-end">
             <button type="button" onClick={deleteWebsite} disabled={deletingWebsite || savingSettings} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">{deletingWebsite ? "Deleting..." : "Delete website"}</button>
           </div>

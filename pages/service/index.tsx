@@ -869,6 +869,7 @@ export default function ServiceDetail() {
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [serviceSettings, setServiceSettings] = useState<typeof service>(null);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (service) {
@@ -914,7 +915,7 @@ export default function ServiceDetail() {
   const deleteService = async () => {
     if (!service || !apiEndpoint) return;
     if (!window.confirm(`Delete service "${service.id}"? This action cannot be undone.`)) return;
-    setSettingsError(null);
+    setDeleteError(null);
     setDeletingService(true);
     try {
       const response = await fetch(`${apiEndpoint}/deployd/service`, {
@@ -932,7 +933,7 @@ export default function ServiceDetail() {
       setDeleteSuccess(true);
       setTimeout(() => router.push('/service/list'), 1500);
     } catch (err: any) {
-      setSettingsError(err?.message || 'Failed to delete service');
+      setDeleteError(err?.message || 'Failed to delete service');
     } finally {
       setDeletingService(false);
     }
@@ -1145,6 +1146,7 @@ export default function ServiceDetail() {
             <section className="rounded-xl border border-red-300 bg-white p-5 dark:border-red-900 dark:bg-gray-950">
               <h3 className="text-lg font-semibold text-red-700 dark:text-red-400">Danger zone</h3>
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Permanently delete this service. This action cannot be undone.</p>
+              {deleteError && <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">{deleteError}</div>}
               <div className="mt-4 flex justify-end">
                 <button type="button" onClick={deleteService} disabled={deletingService || savingSettings} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">{deletingService ? 'Deleting...' : 'Delete service'}</button>
               </div>
