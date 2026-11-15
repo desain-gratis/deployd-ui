@@ -863,6 +863,62 @@ export default function ServiceDetail() {
     }
   };
 
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [deletingService, setDeletingService] = useState(false);
+
+  const saveServiceSettings = async () => {
+    if (!service || !apiEndpoint) return;
+    setSettingsError(null);
+    setSavingSettings(true);
+    try {
+      const response = await fetch(`${apiEndpoint}/deployd/service`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Namespace': service.namespace,
+        },
+        body: JSON.stringify(service),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.error) {
+        throw new Error(data?.error?.errors?.[0]?.message || data?.error?.message || data?.message || `HTTP ${response.status}`);
+      }
+      const updated = data?.success?.service || data?.success;
+      if (updated && typeof updated === 'object' && updated.id) setService(updated);
+    } catch (err: any) {
+      setSettingsError(err?.message || 'Failed to save service settings');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const deleteService = async () => {
+    if (!service || !apiEndpoint) return;
+    if (!window.confirm(`Delete service "${service.id}"? This action cannot be undone.`)) return;
+    setSettingsError(null);
+    setDeletingService(true);
+    try {
+      const response = await fetch(`${apiEndpoint}/deployd/service`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Namespace': service.namespace,
+        },
+        body: JSON.stringify(service),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.error) {
+        throw new Error(data?.error?.errors?.[0]?.message || data?.error?.message || data?.message || `HTTP ${response.status}`);
+      }
+      await router.push('/service/list');
+    } catch (err: any) {
+      setSettingsError(err?.message || 'Failed to delete service');
+    } finally {
+      setDeletingService(false);
+    }
+  };
+
   const getStatusBadgeColor = (status?: string) => {
     if (!status) return 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     if (status === 'DEPLOYED') return 'bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200';
@@ -923,7 +979,7 @@ export default function ServiceDetail() {
       {/* Tabs */}
       <div className="mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto [-webkit-overflow-scrolling:touch]">
         <div className="flex gap-2 whitespace-nowrap min-w-max">
-          {['deployment', 'releases', 'env', 'secret', 'routing', 'job-log'].map((t) => (
+          {['deployment', 'releases', 'env', 'secret', 'routing', 'job-log', 'settings'].map((t) => (
             <button
               key={t}
               onClick={() => {
@@ -1019,6 +1075,62 @@ export default function ServiceDetail() {
             selectedHost={secretResource.selectedHost}
             onSelectHost={secretResource.selectHost}
           />
+        )}
+
+        {tab === 'settings' && service && (
+          <div className="space-y-6">
+            <section className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-950">
+              <div className="mb-5">
+                <h3 className="text-lg font-semibold">Service settings</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Update the service information and artifact configuration.</p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium">Namespace</label>
+                  <input value={service.namespace} disabled className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium">Service ID</label>
+                  <input value={service.id} disabled className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1.5 block text-sm font-medium">Name</label>
+                  <input value={service.name || ''} onChange={(e) => setService({ ...service, name: e.target.value })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1.5 block text-sm font-medium">Description</label>
+                  <textarea rows={3} value={service.description || ''} onChange={(e) => setService({ ...service, description: e.target.value })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1.5 block text-sm font-medium">Executable path</label>
+                  <input value={service.executable_path || ''} onChange={(e) => setService({ ...service, executable_path: e.target.value })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium">Repository namespace</label>
+                  <input value={service.repository?.namespace || ''} onChange={(e) => setService({ ...service, repository: { ...service.repository, namespace: e.target.value } })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium">Repository ID</label>
+                  <input value={service.repository?.id || ''} onChange={(e) => setService({ ...service, repository: { ...service.repository, id: e.target.value } })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1.5 block text-sm font-medium">Repository URL</label>
+                  <input value={service.repository?.url || ''} onChange={(e) => setService({ ...service, repository: { ...service.repository, url: e.target.value } })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                </div>
+              </div>
+              {settingsError && <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">{settingsError}</div>}
+              <div className="mt-5 flex justify-end">
+                <button type="button" onClick={saveServiceSettings} disabled={savingSettings || deletingService} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">{savingSettings ? 'Saving...' : 'Save changes'}</button>
+              </div>
+            </section>
+            <section className="rounded-xl border border-red-300 bg-white p-5 dark:border-red-900 dark:bg-gray-950">
+              <h3 className="text-lg font-semibold text-red-700 dark:text-red-400">Danger zone</h3>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Permanently delete this service. This action cannot be undone.</p>
+              <div className="mt-4 flex justify-end">
+                <button type="button" onClick={deleteService} disabled={deletingService || savingSettings} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">{deletingService ? 'Deleting...' : 'Delete service'}</button>
+              </div>
+            </section>
+          </div>
         )}
 
         {tab === 'routing' && (
