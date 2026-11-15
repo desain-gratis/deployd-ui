@@ -307,16 +307,10 @@ export default function DeploymentTab({
                         <>
                           <span className="opacity-50">•</span>
                           <span
-                            title={
-                              "Finished at: " +
-                              formatLocalDateTime(selectedJob.finished_at)
-                            }
+                            title={`Finished: ${formatLocalDateTime(selectedJob.finished_at)} · Duration: ${formatTimeDifference(selectedJob.published_at, selectedJob.finished_at)}`}
                             className="underline decoration-dotted cursor-help"
                           >
-                            {formatTimeDifference(
-                              selectedJob.published_at,
-                              selectedJob.finished_at
-                            )}
+                            finished {formatRelativeTime(selectedJob.finished_at)}
                           </span>
                         </>
                       )}
