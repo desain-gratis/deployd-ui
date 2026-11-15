@@ -24,6 +24,23 @@ export default function Nav() {
               <option value="deployd">deployd</option>
             </select>
           </div>
+          <details className="relative">
+            <summary
+              aria-label="More options"
+              title="More options"
+              className="list-none cursor-pointer rounded px-2 py-1 text-xl leading-none hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              ⋮
+            </summary>
+            <div className="absolute right-0 top-full z-50 mt-2 min-w-40 rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-900">
+              <Link
+                href="/settings"
+                className="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                Settings
+              </Link>
+            </div>
+          </details>
         </div>
       </div>
     </header>
