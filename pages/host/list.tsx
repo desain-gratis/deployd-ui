@@ -100,7 +100,7 @@ export default function HostPage() {
             <div className="text-sm mb-2">Host: <strong>{selected.host}</strong></div>
             <div className="text-sm mb-2">OS / Arch: {selected.os} / {selected.architecture}</div>
             <div className="text-sm mb-2">FQDN: {selected.fqdn}</div>
-            <div className="text-sm mb-2">Published: {selected.published_at}</div>
+            <div className="text-sm mb-2">Published: {selected.published_at ? `${formatRelativeTime(selected.published_at)} (${formatLocalDateTime(selected.published_at)})` : '—'}</div>
           </div>
           <div>
             <h4 className="font-medium mb-2">Raft Config</h4>
