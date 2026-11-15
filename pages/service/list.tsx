@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useNamespace } from '../../context/NamespaceContext';
 import { useApiEndpoint } from '../../context/ApiEndpointContext';
+import { formatLocalDateTime, formatRelativeTime } from '../../lib/time';
 
 type Repository = {
   url?: string;
@@ -89,7 +90,7 @@ export default function ServicePage() {
                 <div className="text-lg font-semibold">{s.name ?? s.id}</div>
                 <div className="text-sm text-gray-600 dark:text-gray-300">{s.description}</div>
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{s.published_at ? new Date(s.published_at).toLocaleString() : ''}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{s.published_at ? <span title={formatLocalDateTime(s.published_at)}>{formatRelativeTime(s.published_at)}</span> : '—'}</div>
             </div>
 
             <div className="mt-3 text-sm text-gray-700 dark:text-gray-200">{s.repository?.namespace}/{s.repository?.id}</div>
