@@ -867,9 +867,21 @@ export default function ServiceDetail() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [deletingService, setDeletingService] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [serviceSettings, setServiceSettings] = useState<typeof service>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
+
+  useEffect(() => {
+    if (service) {
+      setServiceSettings({
+        ...service,
+        repository: service.repository ? { ...service.repository } : service.repository,
+      });
+    }
+  }, [service]);
+
 
   const saveServiceSettings = async () => {
-    if (!service || !apiEndpoint) return;
+    if (!serviceSettings || !apiEndpoint) return;
     setSettingsError(null);
     setSavingSettings(true);
     try {
@@ -877,16 +889,19 @@ export default function ServiceDetail() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Namespace': service.namespace,
+          'X-Namespace': serviceSettings.namespace,
         },
-        body: JSON.stringify(service),
+        body: JSON.stringify(serviceSettings),
       });
       const data = await response.json().catch(() => null);
       if (!response.ok || data?.error) {
         throw new Error(data?.error?.errors?.[0]?.message || data?.error?.message || data?.message || `HTTP ${response.status}`);
       }
       const updated = data?.success?.service || data?.success;
-      if (updated && typeof updated === 'object' && updated.id) setService(updated);
+      if (updated && typeof updated === 'object' && updated.id) {
+        setService(updated);
+        setServiceSettings({ ...updated, repository: updated.repository ? { ...updated.repository } : updated.repository });
+      }
       setSettingsSaved(true);
       setTimeout(() => setSettingsSaved(false), 5000);
     } catch (err: any) {
@@ -914,7 +929,8 @@ export default function ServiceDetail() {
       if (!response.ok || data?.error) {
         throw new Error(data?.error?.errors?.[0]?.message || data?.error?.message || data?.message || `HTTP ${response.status}`);
       }
-      await router.push('/service/list');
+      setDeleteSuccess(true);
+      setTimeout(() => router.push('/service/list'), 1500);
     } catch (err: any) {
       setSettingsError(err?.message || 'Failed to delete service');
     } finally {
@@ -1080,7 +1096,7 @@ export default function ServiceDetail() {
           />
         )}
 
-        {tab === 'settings' && service && (
+        {tab === 'settings' && serviceSettings && (
           <div className="space-y-6">
             <section className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-950">
               <div className="mb-5">
@@ -1090,35 +1106,35 @@ export default function ServiceDetail() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-sm font-medium">Namespace</label>
-                  <input value={service.namespace} disabled className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900" />
+                  <input value={serviceSettings.namespace} disabled className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900" />
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium">Service ID</label>
-                  <input value={service.id} disabled className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900" />
+                  <input value={serviceSettings.id} disabled className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900" />
                 </div>
                 <div className="sm:col-span-2">
                   <label className="mb-1.5 block text-sm font-medium">Name</label>
-                  <input value={service.name || ''} onChange={(e) => setService({ ...service, name: e.target.value })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                  <input value={serviceSettings.name || ''} onChange={(e) => setServiceSettings({ ...serviceSettings, name: e.target.value })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
                 </div>
                 <div className="sm:col-span-2">
                   <label className="mb-1.5 block text-sm font-medium">Description</label>
-                  <textarea rows={3} value={service.description || ''} onChange={(e) => setService({ ...service, description: e.target.value })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                  <textarea rows={3} value={serviceSettings.description || ''} onChange={(e) => setServiceSettings({ ...serviceSettings, description: e.target.value })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
                 </div>
                 <div className="sm:col-span-2">
                   <label className="mb-1.5 block text-sm font-medium">Executable path</label>
-                  <input value={service.executable_path || ''} onChange={(e) => setService({ ...service, executable_path: e.target.value })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                  <input value={serviceSettings.executable_path || ''} onChange={(e) => setServiceSettings({ ...serviceSettings, executable_path: e.target.value })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium">Repository namespace</label>
-                  <input value={service.repository?.namespace || ''} onChange={(e) => setService({ ...service, repository: { ...service.repository, namespace: e.target.value } })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                  <input value={serviceSettings.repository?.namespace || ''} onChange={(e) => setServiceSettings({ ...serviceSettings, repository: { ...serviceSettings.repository, namespace: e.target.value } })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium">Repository ID</label>
-                  <input value={service.repository?.id || ''} onChange={(e) => setService({ ...service, repository: { ...service.repository, id: e.target.value } })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                  <input value={serviceSettings.repository?.id || ''} onChange={(e) => setServiceSettings({ ...serviceSettings, repository: { ...serviceSettings.repository, id: e.target.value } })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
                 </div>
                 <div className="sm:col-span-2">
                   <label className="mb-1.5 block text-sm font-medium">Repository URL</label>
-                  <input value={service.repository?.url || ''} onChange={(e) => setService({ ...service, repository: { ...service.repository, url: e.target.value } })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                  <input value={serviceSettings.repository?.url || ''} onChange={(e) => setServiceSettings({ ...serviceSettings, repository: { ...serviceSettings.repository, url: e.target.value } })} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900" />
                 </div>
               </div>
               {settingsError && <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">{settingsError}</div>}
@@ -1169,6 +1185,17 @@ export default function ServiceDetail() {
               <div className="font-semibold text-gray-100">Settings saved</div>
               <div className="text-gray-400">Service information has been updated.</div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {deleteSuccess && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-3 fade-in duration-300">
+          <div className="flex items-start gap-3 max-w-sm rounded-xl border border-gray-800 bg-gray-900/95 px-4 py-3 shadow-lg backdrop-blur">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-900/40">
+              <svg className="h-4 w-4 text-green-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <div className="text-sm leading-snug"><div className="font-semibold text-gray-100">Service deleted</div><div className="text-gray-400">Redirecting to services...</div></div>
           </div>
         </div>
       )}
