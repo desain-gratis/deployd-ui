@@ -569,8 +569,9 @@ export default function ServiceDetail() {
                 .join(",");
             };
 
+            const timestamp = new Date().toISOString();
             const logMessage = [
-              new Date().toLocaleTimeString(),
+              formatLocalDateTime(timestamp),
               `job=${job.id}`,
               `status=${job.status}`,
               `configure=${formatStatusMap(job.configure_host_job?.status)}`,
@@ -580,7 +581,7 @@ export default function ServiceDetail() {
               ...prev,
               {
                 message: logMessage,
-                timestamp: new Date().toISOString(),
+                timestamp,
               },
             ]);
 
