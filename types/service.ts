@@ -118,6 +118,7 @@ export type KV = {
     id?: number | string;
     version?: string;
     value?: Record<string, any>;
+    value_by_host?: Record<string, Record<string, any>>;
     published_at?: string;
     url?: string;
 };
