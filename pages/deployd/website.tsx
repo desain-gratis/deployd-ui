@@ -39,6 +39,7 @@ export default function WebsiteDetailPage() {
   const { apiEndpoint } = useApiEndpoint();
 
   const [website, setWebsite] = useState<Website | null>(null);
+  const [activeTab, setActiveTab] = useState<"deployment" | "settings">("deployment");
   const [builds, setBuilds] = useState<Build[]>([]);
   const [jobs, setJobs] = useState<WebsiteJob[]>([]);
   const [loading, setLoading] = useState(false);
@@ -240,6 +241,26 @@ export default function WebsiteDetailPage() {
       {loading && <div className="text-sm text-gray-500">Loading website...</div>}
       {error && <div className="mb-4 text-sm text-red-600">{error}</div>}
 
+      {website && <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("deployment")}
+            className={`border-b-2 px-4 py-2 text-sm font-medium ${activeTab === "deployment" ? "border-blue-600 text-blue-600 dark:text-blue-400" : "border-transparent text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"}`}
+          >
+            Deployment
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("settings")}
+            className={`border-b-2 px-4 py-2 text-sm font-medium ${activeTab === "settings" ? "border-blue-600 text-blue-600 dark:text-blue-400" : "border-transparent text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"}`}
+          >
+            Settings
+          </button>
+        </div>
+      </div>}
+
+      {activeTab === "deployment" && <>
       {website && <div className="mb-5 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-950">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -254,6 +275,30 @@ export default function WebsiteDetailPage() {
         </div>
       </div>}
 
+      <div className="mb-3 flex items-center justify-between"><h3 className="font-semibold">Deployment history</h3><span className="text-xs text-gray-500">{jobs.length} jobs</span></div>
+      {jobs.length === 0 ? <div className="rounded-lg border border-dashed border-gray-300 p-5 text-sm text-gray-500 dark:border-gray-700">No website deployment jobs found.</div> : (
+        <div className="space-y-3">{jobs.map((job) => (
+          <div key={job.id} className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="font-mono text-sm">{job.id}</div>
+              <span className={`rounded px-2 py-1 text-xs font-medium ${statusClass(job.status)}`}>{job.status}</span>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-x-3 text-xs text-gray-500">{job.published_at && <span title={formatLocalDateTime(job.published_at)}>Published {formatRelativeTime(job.published_at)}</span>}{job.finished_at && <span title={formatLocalDateTime(job.finished_at)}>Finished {formatRelativeTime(job.finished_at)}</span>}</div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">{Object.entries(job.result || {}).map(([host, result]) => (
+              <div key={host} className="rounded-md bg-gray-50 p-3 text-sm dark:bg-gray-900">
+                <div className="flex items-center justify-between gap-2"><span className="font-medium">{host}</span><span className={`rounded px-2 py-0.5 text-xs ${statusClass(result.status)}`}>{result.status}</span></div>
+                {result.message && <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">{result.message}</p>}
+                {result.error && <p className="mt-1 break-words text-xs text-red-600">{result.error}</p>}
+                <div className="mt-1 text-xs text-gray-500">Host ID: {result.host_id || "—"} · Job ID: {result.job_id || "—"}</div>
+              </div>
+            ))}</div>
+          </div>
+        ))}</div>
+      )}
+
+      </>}
+
+      {activeTab === "settings" && <>
       {website && settings && <div className="mb-6 space-y-6">
         <section className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-950">
           <div className="mb-5">
@@ -304,26 +349,7 @@ export default function WebsiteDetailPage() {
         </section>
       </div>}
 
-      <div className="mb-3 flex items-center justify-between"><h3 className="font-semibold">Deployment history</h3><span className="text-xs text-gray-500">{jobs.length} jobs</span></div>
-      {jobs.length === 0 ? <div className="rounded-lg border border-dashed border-gray-300 p-5 text-sm text-gray-500 dark:border-gray-700">No website deployment jobs found.</div> : (
-        <div className="space-y-3">{jobs.map((job) => (
-          <div key={job.id} className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="font-mono text-sm">{job.id}</div>
-              <span className={`rounded px-2 py-1 text-xs font-medium ${statusClass(job.status)}`}>{job.status}</span>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-x-3 text-xs text-gray-500">{job.published_at && <span title={formatLocalDateTime(job.published_at)}>Published {formatRelativeTime(job.published_at)}</span>}{job.finished_at && <span title={formatLocalDateTime(job.finished_at)}>Finished {formatRelativeTime(job.finished_at)}</span>}</div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">{Object.entries(job.result || {}).map(([host, result]) => (
-              <div key={host} className="rounded-md bg-gray-50 p-3 text-sm dark:bg-gray-900">
-                <div className="flex items-center justify-between gap-2"><span className="font-medium">{host}</span><span className={`rounded px-2 py-0.5 text-xs ${statusClass(result.status)}`}>{result.status}</span></div>
-                {result.message && <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">{result.message}</p>}
-                {result.error && <p className="mt-1 break-words text-xs text-red-600">{result.error}</p>}
-                <div className="mt-1 text-xs text-gray-500">Host ID: {result.host_id || "—"} · Job ID: {result.job_id || "—"}</div>
-              </div>
-            ))}</div>
-          </div>
-        ))}</div>
-      )}
+      </>}
 
       {showDeploy && <Modal title={`Deploy ${website?.host_address || "website"}`} onClose={() => !deploying && setShowDeploy(false)}>
         <div className="space-y-4">
