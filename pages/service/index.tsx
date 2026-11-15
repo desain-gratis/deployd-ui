@@ -1152,7 +1152,7 @@ export default function ServiceDetail() {
               >
                 {envs.length > 0 ? (
                   envs.map((ev, idx) => (
-                    <option key={idx} value={idx}>
+                    <option key={idx} value={idx} title={formatLocalDateTime(ev.published_at)}>
                       {ev.id ?? ev.version ?? `v${idx}`} (published {formatRelativeTime(ev.published_at)})
                     </option>
                   ))
@@ -1171,7 +1171,7 @@ export default function ServiceDetail() {
               >
                 {secrets.length > 0 ? (
                   secrets.map((s, idx) => (
-                    <option key={idx} value={idx}>
+                    <option key={idx} value={idx} title={formatLocalDateTime(s.published_at)}>
                       {s.id ?? s.version ?? `v${idx}`} (published {formatRelativeTime(s.published_at)})
                     </option>
                   ))
@@ -1190,7 +1190,7 @@ export default function ServiceDetail() {
               >
                 {routingResource.versions.length > 0 ? (
                   routingResource.versions.map((rv, idx) => (
-                    <option key={idx} value={idx}>
+                    <option key={idx} value={idx} title={formatLocalDateTime(rv.published_at)}>
                       {rv.version ?? `v${idx}`} (published {formatRelativeTime(rv.published_at)})
                     </option>
                   ))
