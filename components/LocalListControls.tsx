@@ -19,48 +19,58 @@ export default function LocalListControls({
   searchText, onSearchTextChange, sort, onSortChange, count, total, placeholder,
   filterLabel, filterValue, filterOptions, onFilterChange,
 }: Props) {
+  const controlClass = "h-8 rounded-md border border-gray-200 bg-transparent text-xs text-gray-700 outline-none transition-colors hover:border-gray-300 focus:border-blue-500 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600";
+
   return (
-    <div className="mb-5 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/50">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_200px_220px]">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Search and filter</label>
-          <input
-            type="search"
-            value={searchText}
-            onChange={(event) => onSearchTextChange(event.target.value)}
-            placeholder={placeholder}
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Organize by</label>
-          <select
-            value={sort}
-            onChange={(event) => onSortChange(event.target.value as LocalListSort)}
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
-          >
-            <option value="alphabetical">Alphabetical (A–Z)</option>
-            <option value="recent">Newest (relative-time sections)</option>
-            <option value="oldest">Oldest (relative-time sections)</option>
-          </select>
-        </div>
-        {filterLabel && onFilterChange && (
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{filterLabel}</label>
-            <select
-              value={filterValue || ""}
-              onChange={(event) => onFilterChange(event.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
-            >
-              <option value="">All</option>
-              {(filterOptions || []).map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-          </div>
-        )}
+    <div className="mb-3 flex flex-wrap items-center gap-2">
+      <div className={`relative min-w-[180px] flex-1 sm:max-w-xs ${controlClass}`}>
+        <span aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400">⌕</span>
+        <input
+          type="search"
+          aria-label="Search"
+          value={searchText}
+          onChange={(event) => onSearchTextChange(event.target.value)}
+          placeholder={placeholder}
+          className="h-full w-full bg-transparent py-1 pl-7 pr-2 text-xs text-gray-900 outline-none placeholder:text-gray-400 dark:text-gray-100"
+        />
       </div>
-      <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">Showing {count} of {total}</div>
+
+      <label className="relative">
+        <span aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400">↕</span>
+        <select
+          aria-label="Sort"
+          value={sort}
+          onChange={(event) => onSortChange(event.target.value as LocalListSort)}
+          className={`${controlClass} appearance-none cursor-pointer py-1 pl-7 pr-7`}
+        >
+          <option value="alphabetical">A–Z</option>
+          <option value="recent">Newest</option>
+          <option value="oldest">Oldest</option>
+        </select>
+        <span aria-hidden="true" className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">⌄</span>
+      </label>
+
+      {filterLabel && onFilterChange && (
+        <label className="relative">
+          <span aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400">▽</span>
+          <select
+            aria-label={filterLabel}
+            value={filterValue || ""}
+            onChange={(event) => onFilterChange(event.target.value)}
+            className={`${controlClass} max-w-[180px] appearance-none cursor-pointer py-1 pl-7 pr-7`}
+          >
+            <option value="">All {filterLabel}</option>
+            {(filterOptions || []).map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+          <span aria-hidden="true" className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">⌄</span>
+        </label>
+      )}
+
+      <span className="ml-auto whitespace-nowrap text-[11px] tabular-nums text-gray-400" title={`${count} of ${total}`}>
+        {count}/{total}
+      </span>
     </div>
   );
 }
