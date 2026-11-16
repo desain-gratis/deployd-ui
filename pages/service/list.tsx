@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import FlexSearch from "flexsearch";
+import LocalListControls from "../../components/LocalListControls";
+import { groupLocalItems, type LocalListSort } from "../../lib/localList";
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useNamespace } from '../../context/NamespaceContext';
 import { useApiEndpoint } from '../../context/ApiEndpointContext';
@@ -34,6 +37,8 @@ export default function ServicePage() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState("");
+  const [sort, setSort] = useState<LocalListSort>("alphabetical");
 
   const { apiEndpoint } = useApiEndpoint();
   
@@ -57,7 +62,23 @@ export default function ServicePage() {
     };
 
     fetchServices();
-    return () => {
+  
+  const searchIndex = useMemo(() => {
+    const index = new FlexSearch.Index({ tokenize: "forward" });
+    services.forEach((item, id) => {
+      index.add(String(id), [s.name, s.id, s.description, s.namespace, s.repository?.namespace, s.repository?.id, s.repository?.url, ...(s.bound_addresses || []).flatMap((address) => [address.host, address.port])].filter(Boolean).join(" "));
+    });
+    return index;
+  }, [services]);
+
+  const groups = useMemo(() => {
+    const query = searchText.trim();
+    const matches = query ? new Set<string>(searchIndex.search(query).map(String)) : null;
+    const filtered = matches ? services.filter((_, id) => matches.has(String(id))) : services;
+    return groupLocalItems(filtered, sort, (s: Service) => s.name || s.id, (s: Service) => s.published_at);
+  }, [services, searchIndex, searchText, sort]);
+
+  return () => {
       mounted = false;
     };
   }, [apiEndpoint, namespace]);
