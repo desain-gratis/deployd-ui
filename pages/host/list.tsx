@@ -70,8 +70,6 @@ export default function HostPage() {
     };
   }, [apiEndpoint, namespace]);
 
-  const [searchText, setSearchText] = useState("");
-  const [sort, setSort] = useState<LocalListSort>("alphabetical");
   const searchIndex = useMemo(() => {
     const index = new FlexSearch.Index({ tokenize: "forward" });
     hosts.forEach((item, id) => {
