@@ -3,8 +3,8 @@ export type LocalListSort = "alphabetical" | "recent" | "oldest";
 export function groupLocalItems<T>(
   items: T[],
   sort: LocalListSort,
-  getName: (item: T) => string,
-  getPublishedAt: (item: T) => string | undefined,
+  getName: (...args: [T]) => string,
+  getPublishedAt: (...args: [T]) => string | undefined,
 ) {
   const sorted = [...items];
   const groups = new Map<string, T[]>();
