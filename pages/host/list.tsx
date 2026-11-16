@@ -41,6 +41,7 @@ export default function HostPage() {
   const [selected, setSelected] = useState<Host | null>(null);
   const [searchText, setSearchText] = useState("");
   const [sort, setSort] = useState<LocalListSort>("alphabetical");
+  const [selectedFilter, setSelectedFilter] = useState("");
 
   const { apiEndpoint } = useApiEndpoint();
 
@@ -81,8 +82,9 @@ export default function HostPage() {
     const query = searchText.trim();
     const matches = query ? new Set<string>(searchIndex.search(query).map(String)) : null;
     const filtered = matches ? hosts.filter((_, id) => matches.has(String(id))) : hosts;
-    return groupLocalItems(filtered, sort, (h: Host) => h.host, (h: Host) => h.published_at);
-  }, [hosts, searchIndex, searchText, sort]);
+    const facetFiltered = selectedFilter ? filtered.filter((host) => `${host.os || "Unknown"} / ${host.architecture || "Unknown"}` === selectedFilter) : filtered;
+    return groupLocalItems(facetFiltered, sort, (h: Host) => h.host, (h: Host) => h.published_at);
+  }, [hosts, searchIndex, searchText, sort, selectedFilter]);
 
   return (
     <div>
@@ -96,7 +98,7 @@ export default function HostPage() {
       <div className="mb-4 text-sm text-gray-600 dark:text-gray-300">Using namespace: {namespace}</div>
 
       {loading && <div className="text-sm">Loading hosts...</div>}
-      <LocalListControls searchText={searchText} onSearchTextChange={setSearchText} sort={sort} onSortChange={setSort} count={groups.reduce((total, group) => total + group.items.length, 0)} total={hosts.length} placeholder="Search host, FQDN, OS, architecture, namespace..." />
+      <LocalListControls searchText={searchText} onSearchTextChange={setSearchText} sort={sort} onSortChange={setSort} count={groups.reduce((total, group) => total + group.items.length, 0)} total={hosts.length} placeholder="Search host, FQDN, OS, architecture, namespace..." filterLabel="OS / architecture" filterValue={selectedFilter} onFilterChange={setSelectedFilter} filterOptions={Array.from(new Set(hosts.map((host) => `${host.os || "Unknown"} / ${host.architecture || "Unknown"}`))).map((value) => ({ label: value, value }))} />
       {groups.length === 0 && <div className="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700">No matching records.</div>}
       {groups.map((group) => (
         <section key={group.label} className="mb-5">
