@@ -62,8 +62,6 @@ export default function WebsiteListPage() {
   return () => { mounted = false; };
   }, [apiEndpoint, namespace]);
 
-  const [searchText, setSearchText] = useState("");
-  const [sort, setSort] = useState<LocalListSort>("alphabetical");
   const searchIndex = useMemo(() => {
     const index = new FlexSearch.Index({ tokenize: "forward" });
     websites.forEach((item, id) => {
