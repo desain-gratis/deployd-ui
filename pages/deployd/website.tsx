@@ -261,7 +261,7 @@ export default function WebsiteDetailPage() {
 
       try {
         const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-        const endpointNoPrefix = apiEndpoint.replace(/^https?:\\/\\//, "");
+        const endpointNoPrefix = apiEndpoint.replace(/^https?:\/\//, "");
         const params = new URLSearchParams({
           namespace: website.namespace,
           host_address: website.host_address,
