@@ -25,6 +25,7 @@ export default function ArtifactPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
   const [sort, setSort] = useState<LocalListSort>("alphabetical");
+  const [selectedFilter, setSelectedFilter] = useState("");
 
   const { apiEndpoint } = useApiEndpoint();
   
@@ -66,8 +67,9 @@ export default function ArtifactPage() {
     const query = searchText.trim();
     const matches = query ? new Set<string>(searchIndex.search(query).map(String)) : null;
     const filtered = matches ? repos.filter((_, id) => matches.has(String(id))) : repos;
-    return groupLocalItems(filtered, sort, (r: Repository) => r.name || r.id, (r: Repository) => r.published_at);
-  }, [repos, searchIndex, searchText, sort]);
+    const facetFiltered = selectedFilter ? filtered.filter((repository) => repository.source || "" === selectedFilter) : filtered;
+    return groupLocalItems(facetFiltered, sort, (r: Repository) => r.name || r.id, (r: Repository) => r.published_at);
+  }, [repos, searchIndex, searchText, sort, selectedFilter]);
 
   return (
     <div>
@@ -81,7 +83,7 @@ export default function ArtifactPage() {
       <div className="mb-4 text-sm text-gray-600 dark:text-gray-300">Using namespace: {namespace}</div>
 
       {loading && <div className="text-sm">Loading repositories...</div>}
-      <LocalListControls searchText={searchText} onSearchTextChange={setSearchText} sort={sort} onSortChange={setSort} count={groups.reduce((total, group) => total + group.items.length, 0)} total={repos.length} placeholder="Search repository name, ID, source, namespace, URL..." />
+      <LocalListControls searchText={searchText} onSearchTextChange={setSearchText} sort={sort} onSortChange={setSort} count={groups.reduce((total, group) => total + group.items.length, 0)} total={repos.length} placeholder="Search repository name, ID, source, namespace, URL..." filterLabel="Source" filterValue={selectedFilter} onFilterChange={setSelectedFilter} filterOptions={Array.from(new Set(repos.map((repository) => repository.source).filter(Boolean))).map((value) => ({ label: value, value }))} />
       {groups.length === 0 && <div className="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700">No matching records.</div>}
       {groups.map((group) => (
         <section key={group.label} className="mb-5">
