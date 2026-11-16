@@ -9,14 +9,19 @@ type Props = {
   count: number;
   total: number;
   placeholder: string;
+  filterLabel?: string;
+  filterValue?: string;
+  filterOptions?: { label: string; value: string }[];
+  onFilterChange?: (value: string) => void;
 };
 
 export default function LocalListControls({
   searchText, onSearchTextChange, sort, onSortChange, count, total, placeholder,
+  filterLabel, filterValue, filterOptions, onFilterChange,
 }: Props) {
   return (
     <div className="mb-5 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/50">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_200px]">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_200px_220px]">
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Search and filter</label>
           <input
@@ -39,6 +44,21 @@ export default function LocalListControls({
             <option value="oldest">Oldest (relative-time sections)</option>
           </select>
         </div>
+        {filterLabel && onFilterChange && (
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{filterLabel}</label>
+            <select
+              value={filterValue || ""}
+              onChange={(event) => onFilterChange(event.target.value)}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+            >
+              <option value="">All</option>
+              {(filterOptions || []).map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
       <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">Showing {count} of {total}</div>
     </div>
