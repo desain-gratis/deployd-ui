@@ -35,7 +35,8 @@ export default function LocalListControls({
             className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
           >
             <option value="alphabetical">Alphabetical (A–Z)</option>
-            <option value="recent">Recently published</option>
+            <option value="recent">Newest (relative-time sections)</option>
+            <option value="oldest">Oldest (relative-time sections)</option>
           </select>
         </div>
       </div>
