@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import FlexSearch from "flexsearch";
+import LocalListControls from "../../components/LocalListControls";
+import { groupLocalItems, type LocalListSort } from "../../lib/localList";
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useNamespace } from '../../context/NamespaceContext';
 import { useApiEndpoint } from '../../context/ApiEndpointContext';
@@ -33,7 +36,9 @@ export default function ServicePage() {
   const { namespace } = useNamespace();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState("");
+  const [sort, setSort] = useState<LocalListSort>("alphabetical");
 
   const { apiEndpoint } = useApiEndpoint();
   
@@ -57,10 +62,25 @@ export default function ServicePage() {
     };
 
     fetchServices();
-    return () => {
+  
+  return () => {
       mounted = false;
     };
   }, [apiEndpoint, namespace]);
+
+  const searchIndex = useMemo(() => {
+    const index = new FlexSearch.Index({ tokenize: "forward" });
+    services.forEach((item, id) => {
+      index.add(String(id), [item.name, item.id, item.description, item.namespace, item.repository?.namespace, item.repository?.id, item.repository?.url, ...(item.bound_addresses || []).flatMap((address) => [address.host, address.port])].filter(Boolean).join(" "));
+    });
+    return index;
+  }, [services]);
+  const groups = useMemo(() => {
+    const query = searchText.trim();
+    const matches = query ? new Set<string>(searchIndex.search(query).map(String)) : null;
+    const filtered = matches ? services.filter((_, id) => matches.has(String(id))) : services;
+    return groupLocalItems(filtered, sort, (s: Service) => s.name || s.id, (s: Service) => s.published_at);
+  }, [services, searchIndex, searchText, sort]);
 
   return (
     <div>
@@ -80,30 +100,28 @@ export default function ServicePage() {
       <div className="mb-4 text-sm text-gray-600 dark:text-gray-300">Using namespace: {namespace}</div>
 
       {loading && <div className="text-sm">Loading services...</div>}
-      {error && <div className="text-sm text-red-600">Error: {error}</div>}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {services.map((s) => (
-          <Link key={`${s.namespace}_${s.id}`} href={`/service/?namespace=${encodeURIComponent(s.namespace)}&id=${encodeURIComponent(s.id)}`} className="card block">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-lg font-semibold">{s.name ?? s.id}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">{s.description}</div>
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{s.published_at ? <span title={formatLocalDateTime(s.published_at)}>{formatRelativeTime(s.published_at)}</span> : '—'}</div>
-            </div>
-
-            <div className="mt-3 text-sm text-gray-700 dark:text-gray-200">{s.repository?.namespace}/{s.repository?.id}</div>
-            {s.bound_addresses && s.bound_addresses.length > 0 && (
-              <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                {s.bound_addresses.map((b, i) => (
-                  <div key={i}>{b.host}:{b.port}</div>
-                ))}
-              </div>
-            )}
-          </Link>
-        ))}
-      </div>
+      <LocalListControls searchText={searchText} onSearchTextChange={setSearchText} sort={sort} onSortChange={setSort} count={groups.reduce((total, group) => total + group.items.length, 0)} total={services.length} placeholder="Search name, ID, description, repository, address..." />
+      {groups.length === 0 && <div className="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700">No matching records.</div>}
+      {groups.map((group) => (
+        <section key={group.label} className="mb-5">
+          <h3 className="mb-2 border-b border-gray-200 pb-1 text-sm font-semibold text-gray-500 dark:border-gray-700 dark:text-gray-400">{group.label}</h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {group.items.map((s) => (
+              <Link key={`${s.namespace}_${s.id}`} href={`/service/?namespace=${encodeURIComponent(s.namespace)}&id=${encodeURIComponent(s.id)}`} className="card block">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-lg font-semibold">{s.name ?? s.id}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-300">{s.description}</div>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{s.published_at ? <span title={formatLocalDateTime(s.published_at)}>{formatRelativeTime(s.published_at)}</span> : '—'}</div>
+                </div>
+                <div className="mt-3 text-sm text-gray-700 dark:text-gray-200">{s.repository?.namespace}/{s.repository?.id}</div>
+                {s.bound_addresses && s.bound_addresses.length > 0 && <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">{s.bound_addresses.map((b, i) => <div key={i}>{b.host}:{b.port}</div>)}</div>}
+              </Link>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import FlexSearch from "flexsearch";
+import LocalListControls from "../../components/LocalListControls";
+import { groupLocalItems, type LocalListSort } from "../../lib/localList";
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useNamespace } from '../../context/NamespaceContext';
 import Modal from '../../components/Modal';
@@ -34,8 +37,10 @@ export default function HostPage() {
   const { namespace } = useNamespace();
   const [hosts, setHosts] = useState<Host[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Host | null>(null);
+  const [searchText, setSearchText] = useState("");
+  const [sort, setSort] = useState<LocalListSort>("alphabetical");
 
   const { apiEndpoint } = useApiEndpoint();
 
@@ -59,10 +64,25 @@ export default function HostPage() {
     };
 
     fetchHosts();
-    return () => {
+  
+  return () => {
       mounted = false;
     };
   }, [apiEndpoint, namespace]);
+
+  const searchIndex = useMemo(() => {
+    const index = new FlexSearch.Index({ tokenize: "forward" });
+    hosts.forEach((item, id) => {
+      index.add(String(id), [item.host, item.fqdn, item.os, item.architecture, item.namespace, item.published_at].filter(Boolean).join(" "));
+    });
+    return index;
+  }, [hosts]);
+  const groups = useMemo(() => {
+    const query = searchText.trim();
+    const matches = query ? new Set<string>(searchIndex.search(query).map(String)) : null;
+    const filtered = matches ? hosts.filter((_, id) => matches.has(String(id))) : hosts;
+    return groupLocalItems(filtered, sort, (h: Host) => h.host, (h: Host) => h.published_at);
+  }, [hosts, searchIndex, searchText, sort]);
 
   return (
     <div>
@@ -76,22 +96,27 @@ export default function HostPage() {
       <div className="mb-4 text-sm text-gray-600 dark:text-gray-300">Using namespace: {namespace}</div>
 
       {loading && <div className="text-sm">Loading hosts...</div>}
-      {error && <div className="text-sm text-red-600">Error: {error}</div>}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {hosts.map((h) => (
-          <div key={h.host} onClick={() => setSelected(h)} className="card">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-lg font-semibold">{h.host}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">{h.os} • {h.architecture}</div>
+      <LocalListControls searchText={searchText} onSearchTextChange={setSearchText} sort={sort} onSortChange={setSort} count={groups.reduce((total, group) => total + group.items.length, 0)} total={hosts.length} placeholder="Search host, FQDN, OS, architecture, namespace..." />
+      {groups.length === 0 && <div className="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700">No matching records.</div>}
+      {groups.map((group) => (
+        <section key={group.label} className="mb-5">
+          <h3 className="mb-2 border-b border-gray-200 pb-1 text-sm font-semibold text-gray-500 dark:border-gray-700 dark:text-gray-400">{group.label}</h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {group.items.map((h) => (
+              <div key={h.host} onClick={() => setSelected(h)} className="card">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-lg font-semibold">{h.host}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-300">{h.os} • {h.architecture}</div>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{h.published_at ? <span title={formatLocalDateTime(h.published_at)}>{formatRelativeTime(h.published_at)}</span> : '—'}</div>
+                </div>
+                <div className="mt-3 text-sm text-gray-700 dark:text-gray-200">{h.fqdn}</div>
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{h.published_at ? <span title={formatLocalDateTime(h.published_at)}>{formatRelativeTime(h.published_at)}</span> : '—'}</div>
-            </div>
-            <div className="mt-3 text-sm text-gray-700 dark:text-gray-200">{h.fqdn}</div>
+            ))}
           </div>
-        ))}
-      </div>
+        </section>
+      ))}
 
       {selected && (
         <Modal title={`Host: ${selected.host}`} onClose={() => setSelected(null)}>
