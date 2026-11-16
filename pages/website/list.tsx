@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import FlexSearch from "flexsearch";
+import LocalListControls from "../../components/LocalListControls";
+import { groupLocalItems, type LocalListSort } from "../../lib/localList";
+import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useNamespace } from "../../context/NamespaceContext";
 import { useApiEndpoint } from "../../context/ApiEndpointContext";
@@ -23,6 +26,8 @@ export default function WebsiteListPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notReady, setNotReady] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [sort, setSort] = useState<LocalListSort>("alphabetical");
 
   useEffect(() => {
     if (!apiEndpoint) return;
@@ -53,7 +58,23 @@ export default function WebsiteListPage() {
     };
 
     load();
-    return () => { mounted = false; };
+  
+  const searchIndex = useMemo(() => {
+    const index = new FlexSearch.Index({ tokenize: "forward" });
+    websites.forEach((item, id) => {
+      index.add(String(id), [website.name, website.host_address, website.description, website.artifact_id, website.namespace, website.url].filter(Boolean).join(" "));
+    });
+    return index;
+  }, [websites]);
+
+  const groups = useMemo(() => {
+    const query = searchText.trim();
+    const matches = query ? new Set<string>(searchIndex.search(query).map(String)) : null;
+    const filtered = matches ? websites.filter((_, id) => matches.has(String(id))) : websites;
+    return groupLocalItems(filtered, sort, (website: Website) => website.name || website.host_address, (website: Website) => website.published_at);
+  }, [websites, searchIndex, searchText, sort]);
+
+  return () => { mounted = false; };
   }, [apiEndpoint, namespace]);
 
   return (
@@ -80,26 +101,29 @@ export default function WebsiteListPage() {
         <div className="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">No websites found in this namespace.</div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {websites.map((website) => (
-          <Link
-            key={`${website.namespace}/${website.host_address}`}
-            href={`/deployd/website?id=${encodeURIComponent(website.host_address)}`}
-            className="card block"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="truncate text-lg font-semibold">{website.name || website.host_address}</div>
-                <div className="mt-1 break-all text-sm text-blue-600 dark:text-blue-400">{website.host_address}</div>
-              </div>
-              <div className="shrink-0 text-xs text-gray-500">{website.published_at ? <span title={formatLocalDateTime(website.published_at)}>{formatRelativeTime(website.published_at)}</span> : "—"}</div>
-            </div>
-            {website.description && <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">{website.description}</p>}
-            <div className="mt-3 break-all text-xs text-gray-500 dark:text-gray-400">Artifact: {website.artifact_id || "—"}</div>
-            {website.url && <div className="mt-1 break-all text-xs text-gray-500 dark:text-gray-400">{website.url}</div>}
-          </Link>
-        ))}
-      </div>
+      <LocalListControls searchText={searchText} onSearchTextChange={setSearchText} sort={sort} onSortChange={setSort} count={groups.reduce((total, group) => total + group.items.length, 0)} total={websites.length} placeholder="Search website name, hostname, description, artifact, URL..." />
+      {groups.length === 0 && <div className="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700">No matching records.</div>}
+      {groups.map((group) => (
+        <section key={group.label} className="mb-5">
+          <h3 className="mb-2 border-b border-gray-200 pb-1 text-sm font-semibold text-gray-500 dark:border-gray-700 dark:text-gray-400">{group.label}</h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {group.items.map((website) => (
+                <Link key={`${website.namespace}/${website.host_address}`} href={`/deployd/website?id=${encodeURIComponent(website.host_address)}`} className="card block">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-lg font-semibold">{website.name || website.host_address}</div>
+                      <div className="mt-1 break-all text-sm text-blue-600 dark:text-blue-400">{website.host_address}</div>
+                    </div>
+                    <div className="shrink-0 text-xs text-gray-500">{website.published_at ? <span title={formatLocalDateTime(website.published_at)}>{formatRelativeTime(website.published_at)}</span> : "—"}</div>
+                  </div>
+                  {website.description && <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">{website.description}</p>}
+                  <div className="mt-3 break-all text-xs text-gray-500 dark:text-gray-400">Artifact: {website.artifact_id || "—"}</div>
+                  {website.url && <div className="mt-1 break-all text-xs text-gray-500 dark:text-gray-400">{website.url}</div>}
+                </Link>
+              ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
