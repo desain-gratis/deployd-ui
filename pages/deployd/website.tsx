@@ -248,6 +248,80 @@ export default function WebsiteDetailPage() {
 
   const latestJob = jobs[0];
 
+  // Follow the latest website deployment and merge streamed updates into its history entry.
+  useEffect(() => {
+    if (!apiEndpoint || !website?.namespace || !website?.host_address || !latestJob?.id) return;
+
+    let mounted = true;
+    let ws: WebSocket | null = null;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const connectWebSocket = () => {
+      if (!mounted || ws) return;
+
+      try {
+        const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+        const endpointNoPrefix = apiEndpoint.replace(/^https?:\/\//, "");
+        const params = new URLSearchParams({
+          namespace: website.namespace,
+          host_address: website.host_address,
+          id: latestJob.id,
+        });
+        ws = new WebSocket(`${protocol}://${endpointNoPrefix}/deployd/job/deploy-website/tail/ws?${params.toString()}`);
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (!mounted || !data?.job) return;
+
+            const incomingJob = data.job as WebsiteJob;
+            setJobs((previous) => {
+              const index = previous.findIndex((job) => job.id === incomingJob.id);
+              if (index === -1) return [incomingJob, ...previous];
+
+              const updated = [...previous];
+              const existing = updated[index];
+              updated[index] = {
+                ...existing,
+                ...incomingJob,
+                result: {
+                  ...(existing.result || {}),
+                  ...(incomingJob.result || {}),
+                },
+                request: incomingJob.request || existing.request,
+              };
+              return updated;
+            });
+          } catch (err) {
+            console.error("Failed to parse website deployment websocket message:", err);
+          }
+        };
+
+        ws.onerror = (err) => {
+          console.error("Website deployment websocket error:", err);
+        };
+
+        ws.onclose = () => {
+          ws = null;
+          if (mounted) reconnectTimeout = setTimeout(connectWebSocket, 3000);
+        };
+      } catch (err) {
+        console.error("Failed to create website deployment websocket:", err);
+      }
+    };
+
+    connectWebSocket();
+
+    return () => {
+      mounted = false;
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (ws) {
+        ws.close();
+        ws = null;
+      }
+    };
+  }, [apiEndpoint, website?.namespace, website?.host_address, latestJob?.id]);
+
   const openDeploy = async () => {
     setDeployError(null);
     setSourceMode("build");
