@@ -37,14 +37,13 @@ export function groupLocalItems<T>(
       else if (age < 2 * 24 * 60 * 60 * 1000) key = "Yesterday";
       else if (age < 7 * 24 * 60 * 60 * 1000) key = "This week";
       else if (age < 30 * 24 * 60 * 60 * 1000) key = "This month";
-      else if (age < 365 * 24 * 60 * 60 * 1000) key = "Earlier this year";
       else key = "Older";
     }
     groups.set(key, [...(groups.get(key) || []), item]);
   });
 
   const order = sort === "recent"
-    ? ["Today", "Yesterday", "This week", "This month", "Earlier this year", "Older", "Unknown date"]
-    : ["Unknown date", "Older", "Earlier this year", "This month", "This week", "Yesterday", "Today"];
+    ? ["Today", "Yesterday", "This week", "This month", "Older", "Unknown date"]
+    : ["Unknown date", "Older", "This month", "This week", "Yesterday", "Today"];
   return order.filter((key) => groups.has(key)).map((label) => ({ label, items: groups.get(label)! }));
 }
