@@ -102,7 +102,7 @@ export default function WebsiteListPage() {
         <div className="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">No websites found in this namespace.</div>
       )}
       <LocalListControls searchText={searchText} onSearchTextChange={setSearchText} sort={sort} onSortChange={setSort} count={groups.reduce((total, group) => total + group.items.length, 0)} total={websites.length} placeholder="Search website name, hostname, description, artifact, URL..." filterLabel="Artifact ID" filterValue={selectedFilter} onFilterChange={setSelectedFilter} filterOptions={Array.from(new Set(websites.map((website) => website.artifact_id).filter(Boolean))).map((value) => ({ label: value, value }))} />
-      {groups.length === 0 && <div className="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700">No matching records.</div>}
+      {groups.length === 0 && websites.length > 0 && <div className="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700">No matching records.</div>}
       {groups.map((group) => (
         <section key={group.label} className="mb-5">
           <h3 className="mb-2 border-b border-gray-200 pb-1 text-sm font-semibold text-gray-500 dark:border-gray-700 dark:text-gray-400">{group.label}</h3>
