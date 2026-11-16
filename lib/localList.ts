@@ -1,4 +1,4 @@
-export type LocalListSort = "alphabetical" | "recent";
+export type LocalListSort = "alphabetical" | "recent" | "oldest";
 
 export function groupLocalItems<T>(
   items: T[],
@@ -22,7 +22,9 @@ export function groupLocalItems<T>(
   sorted.sort((a, b) => {
     const aTime = Date.parse(getPublishedAt(a) || "");
     const bTime = Date.parse(getPublishedAt(b) || "");
-    return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+    return sort === "recent"
+      ? (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0)
+      : (Number.isFinite(aTime) ? aTime : 0) - (Number.isFinite(bTime) ? bTime : 0);
   });
 
   const now = Date.now();
@@ -41,6 +43,8 @@ export function groupLocalItems<T>(
     groups.set(key, [...(groups.get(key) || []), item]);
   });
 
-  const order = ["Today", "Yesterday", "This week", "This month", "Earlier this year", "Older", "Unknown date"];
+  const order = sort === "recent"
+    ? ["Today", "Yesterday", "This week", "This month", "Earlier this year", "Older", "Unknown date"]
+    : ["Unknown date", "Older", "Earlier this year", "This month", "This week", "Yesterday", "Today"];
   return order.filter((key) => groups.has(key)).map((label) => ({ label, items: groups.get(label)! }));
 }
