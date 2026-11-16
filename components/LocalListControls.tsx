@@ -3,21 +3,16 @@ import type { LocalListSort } from "../lib/localList";
 
 type Props = {
   searchText: string;
-  onSearchTextChange: (value: string) => void;
+  onSearchTextChange: React.Dispatch<React.SetStateAction<string>>;
   sort: LocalListSort;
-  onSortChange: (value: LocalListSort) => void;
+  onSortChange: React.Dispatch<React.SetStateAction<LocalListSort>>;
   count: number;
   total: number;
   placeholder: string;
-  filterLabel?: string;
-  filterValue?: string;
-  filterOptions?: { label: string; value: string }[];
-  onFilterChange?: (value: string) => void;
 };
 
 export default function LocalListControls({
   searchText, onSearchTextChange, sort, onSortChange, count, total, placeholder,
-  filterLabel, filterValue, filterOptions, onFilterChange,
 }: Props) {
   const controlClass = "h-8 rounded-md border border-gray-200 bg-transparent text-xs text-gray-700 outline-none transition-colors hover:border-gray-300 focus:border-blue-500 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600";
 
@@ -49,24 +44,6 @@ export default function LocalListControls({
         </select>
         <span aria-hidden="true" className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">⌄</span>
       </label>
-
-      {filterLabel && onFilterChange && (
-        <label className="relative">
-          <span aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400">▽</span>
-          <select
-            aria-label={filterLabel}
-            value={filterValue || ""}
-            onChange={(event) => onFilterChange(event.target.value)}
-            className={`${controlClass} max-w-[180px] appearance-none cursor-pointer py-1 pl-7 pr-7`}
-          >
-            <option value="">All {filterLabel}</option>
-            {(filterOptions || []).map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-          <span aria-hidden="true" className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">⌄</span>
-        </label>
-      )}
 
       <span className="ml-auto whitespace-nowrap text-[11px] tabular-nums text-gray-400" title={`${count} of ${total}`}>
         {count}/{total}
