@@ -37,7 +37,7 @@ export default function HostPage() {
   const { namespace } = useNamespace();
   const [hosts, setHosts] = useState<Host[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Host | null>(null);
   const [searchText, setSearchText] = useState("");
   const [sort, setSort] = useState<LocalListSort>("alphabetical");
