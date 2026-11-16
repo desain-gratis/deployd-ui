@@ -67,7 +67,7 @@ export default function ArtifactPage() {
     const query = searchText.trim();
     const matches = query ? new Set<string>(searchIndex.search(query).map(String)) : null;
     const filtered = matches ? repos.filter((_, id) => matches.has(String(id))) : repos;
-    const facetFiltered = selectedFilter ? filtered.filter((repository) => repository.source || "" === selectedFilter) : filtered;
+    const facetFiltered = selectedFilter ? filtered.filter((repository) => (repository.source || "") === selectedFilter) : filtered;
     return groupLocalItems(facetFiltered, sort, (r: Repository) => r.name || r.id, (r: Repository) => r.published_at);
   }, [repos, searchIndex, searchText, sort, selectedFilter]);
 
