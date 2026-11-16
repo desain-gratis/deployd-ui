@@ -74,7 +74,7 @@ export default function WebsiteListPage() {
     const query = searchText.trim();
     const matches = query ? new Set<string>(searchIndex.search(query).map(String)) : null;
     const filtered = matches ? websites.filter((_, id) => matches.has(String(id))) : websites;
-    const facetFiltered = selectedFilter ? filtered.filter((website) => website.artifact_id || "" === selectedFilter) : filtered;
+    const facetFiltered = selectedFilter ? filtered.filter((website) => (website.artifact_id || "") === selectedFilter) : filtered;
     return groupLocalItems(facetFiltered, sort, (website: Website) => website.name || website.host_address, (website: Website) => website.published_at);
   }, [websites, searchIndex, searchText, sort, selectedFilter]);
 
