@@ -30,20 +30,16 @@ export default function LocalListControls({
         />
       </div>
 
-      <label className="relative">
-        <span aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400">↕</span>
-        <select
-          aria-label="Sort"
-          value={sort}
-          onChange={(event) => onSortChange(event.target.value as LocalListSort)}
-          className={`${controlClass} appearance-none cursor-pointer py-1 pl-7 pr-7`}
-        >
-          <option value="alphabetical">A–Z</option>
-          <option value="recent">Newest</option>
-          <option value="oldest">Oldest</option>
-        </select>
-        <span aria-hidden="true" className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">⌄</span>
-      </label>
+      <select
+        aria-label="Sort"
+        value={sort}
+        onChange={(event) => onSortChange(event.target.value as LocalListSort)}
+        className="cursor-pointer rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+      >
+        <option value="alphabetical">A–Z</option>
+        <option value="recent">Newest</option>
+        <option value="oldest">Oldest</option>
+      </select>
 
       <span className="ml-auto whitespace-nowrap text-[11px] tabular-nums text-gray-400" title={`${count} of ${total}`}>
         {count}/{total}
