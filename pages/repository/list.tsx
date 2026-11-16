@@ -55,8 +55,6 @@ export default function ArtifactPage() {
     };
   }, [namespace, apiEndpoint]);
 
-  const [searchText, setSearchText] = useState("");
-  const [sort, setSort] = useState<LocalListSort>("alphabetical");
   const searchIndex = useMemo(() => {
     const index = new FlexSearch.Index({ tokenize: "forward" });
     repos.forEach((item, id) => {
