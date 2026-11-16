@@ -80,7 +80,7 @@ export default function ServicePage() {
     const query = searchText.trim();
     const matches = query ? new Set<string>(searchIndex.search(query).map(String)) : null;
     const filtered = matches ? services.filter((_, id) => matches.has(String(id))) : services;
-    const facetFiltered = selectedFilter ? filtered.filter((service) => service.repository?.id ? `${service.repository.namespace || ""}/${service.repository.id}` : "" === selectedFilter) : filtered;
+    const facetFiltered = selectedFilter ? filtered.filter((service) => (service.repository?.id ? `${service.repository.namespace || ""}/${service.repository.id}` : "") === selectedFilter) : filtered;
     return groupLocalItems(facetFiltered, sort, (s: Service) => s.name || s.id, (s: Service) => s.published_at);
   }, [services, searchIndex, searchText, sort, selectedFilter]);
 
