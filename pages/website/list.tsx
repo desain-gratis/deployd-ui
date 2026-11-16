@@ -28,6 +28,7 @@ export default function WebsiteListPage() {
   const [notReady, setNotReady] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [sort, setSort] = useState<LocalListSort>("alphabetical");
+  const [selectedFilter, setSelectedFilter] = useState("");
 
   useEffect(() => {
     if (!apiEndpoint) return;
@@ -73,8 +74,9 @@ export default function WebsiteListPage() {
     const query = searchText.trim();
     const matches = query ? new Set<string>(searchIndex.search(query).map(String)) : null;
     const filtered = matches ? websites.filter((_, id) => matches.has(String(id))) : websites;
-    return groupLocalItems(filtered, sort, (website: Website) => website.name || website.host_address, (website: Website) => website.published_at);
-  }, [websites, searchIndex, searchText, sort]);
+    const facetFiltered = selectedFilter ? filtered.filter((website) => website.artifact_id || "" === selectedFilter) : filtered;
+    return groupLocalItems(facetFiltered, sort, (website: Website) => website.name || website.host_address, (website: Website) => website.published_at);
+  }, [websites, searchIndex, searchText, sort, selectedFilter]);
 
   return (
     <div>
@@ -99,7 +101,7 @@ export default function WebsiteListPage() {
       {!loading && !error && !notReady && websites.length === 0 && (
         <div className="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">No websites found in this namespace.</div>
       )}
-      <LocalListControls searchText={searchText} onSearchTextChange={setSearchText} sort={sort} onSortChange={setSort} count={groups.reduce((total, group) => total + group.items.length, 0)} total={websites.length} placeholder="Search website name, hostname, description, artifact, URL..." />
+      <LocalListControls searchText={searchText} onSearchTextChange={setSearchText} sort={sort} onSortChange={setSort} count={groups.reduce((total, group) => total + group.items.length, 0)} total={websites.length} placeholder="Search website name, hostname, description, artifact, URL..." filterLabel="Artifact ID" filterValue={selectedFilter} onFilterChange={setSelectedFilter} filterOptions={Array.from(new Set(websites.map((website) => website.artifact_id).filter(Boolean))).map((value) => ({ label: value, value }))} />
       {groups.length === 0 && <div className="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700">No matching records.</div>}
       {groups.map((group) => (
         <section key={group.label} className="mb-5">
