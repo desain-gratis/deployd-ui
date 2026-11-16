@@ -83,7 +83,7 @@ export default function ArtifactPage() {
       <div className="mb-4 text-sm text-gray-600 dark:text-gray-300">Using namespace: {namespace}</div>
 
       {loading && <div className="text-sm">Loading repositories...</div>}
-      <LocalListControls searchText={searchText} onSearchTextChange={setSearchText} sort={sort} onSortChange={setSort} count={groups.reduce((total, group) => total + group.items.length, 0)} total={repos.length} placeholder="Search repository name, ID, source, namespace, URL..." filterLabel="Source" filterValue={selectedFilter} onFilterChange={setSelectedFilter} filterOptions={Array.from(new Set(repos.map((repository) => repository.source).filter(Boolean))).map((value) => ({ label: value, value }))} />
+      <LocalListControls searchText={searchText} onSearchTextChange={setSearchText} sort={sort} onSortChange={setSort} count={groups.reduce((total, group) => total + group.items.length, 0)} total={repos.length} placeholder="Search repository name, ID, source, namespace, URL..." filterLabel="Source" filterValue={selectedFilter} onFilterChange={setSelectedFilter} filterOptions={Array.from(new Set(repos.map((repository) => repository.source || "").filter((value) => value.length > 0))).map((value) => ({ label: value, value }))} />
       {groups.length === 0 && <div className="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700">No matching records.</div>}
       {groups.map((group) => (
         <section key={group.label} className="mb-5">
