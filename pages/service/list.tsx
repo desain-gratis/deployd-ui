@@ -68,8 +68,6 @@ export default function ServicePage() {
     };
   }, [apiEndpoint, namespace]);
 
-  const [searchText, setSearchText] = useState("");
-  const [sort, setSort] = useState<LocalListSort>("alphabetical");
   const searchIndex = useMemo(() => {
     const index = new FlexSearch.Index({ tokenize: "forward" });
     services.forEach((item, id) => {
