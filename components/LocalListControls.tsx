@@ -15,7 +15,7 @@ export default function LocalListControls({
   searchText, onSearchTextChange, sort, onSortChange, count, total, placeholder,
 }: Props) {
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-2">
+    <div className="mb-3 flex flex-wrap items-end gap-2">
       <div className="min-w-[180px] flex-1 sm:max-w-xs">
         <label className="mb-1 block text-sm font-medium">Search</label>
         <input
@@ -39,7 +39,7 @@ export default function LocalListControls({
         <option value="oldest">Oldest</option>
       </select>
 
-      <span className="ml-auto whitespace-nowrap text-[11px] tabular-nums text-gray-400" title={`${count} of ${total}`}>
+      <span className="ml-auto self-center whitespace-nowrap text-[11px] tabular-nums text-gray-400" title={`${count} of ${total}`}>
         {count}/{total}
       </span>
     </div>
