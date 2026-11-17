@@ -28,7 +28,7 @@ type Props = {
   entries: Record<string, any>[];
   onUpdateEntry: (
     index: number,
-    field: "key" | "value",
+    field: "host" | "key" | "value",
     value: any
   ) => void;
   onAddEntry: () => void;
@@ -249,7 +249,7 @@ export default function KeyValueEditor({
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800/60">
                   <tr className="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    <th className="px-4 py-3 font-medium">Key</th>
+                    <th className="px-4 py-3 font-medium">Host</th>\n                    <th className="px-4 py-3 font-medium">Key</th>
                     <th className="px-4 py-3 font-medium">Value</th>
                     <th className="px-4 py-3 font-medium text-right w-24">
                       Action
@@ -259,7 +259,7 @@ export default function KeyValueEditor({
 
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {entries.length > 0 ? (
-                    entries.map((entry, idx) => (
+                    [...entries].map((entry, idx) => ({ entry, idx })).sort((a, b) => String(a.entry.host ?? "").localeCompare(String(b.entry.host ?? "")) || String(a.entry.key ?? "").localeCompare(String(b.entry.key ?? ""))).map(({ entry, idx }) => (
                       <tr
                         key={idx}
                         className={`
@@ -312,7 +312,7 @@ export default function KeyValueEditor({
                   ) : (
                     <tr>
                       <td
-                        colSpan={3}
+                        colSpan={4}
                         className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
                       >
                         No key-value entries
