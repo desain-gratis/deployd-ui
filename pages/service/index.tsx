@@ -1122,6 +1122,7 @@ export default function ServiceDetail() {
         {tab === 'env' && (
           <KeyValueEditor
             title="Environment Variables"
+            hosts={availableHosts}
             versions={envResource.versions}
             selectedVersionIndex={envResource.selectedVersionIndex}
             onSelectVersion={envResource.selectVersion}
@@ -1135,9 +1136,6 @@ export default function ServiceDetail() {
             isSubmitting={envResource.isSubmitting}
             emptyMessage="No environment variables found for this service"
             error={envResource.error}
-            hosts={envResource.hosts}
-            selectedHost={envResource.selectedHost}
-            onSelectHost={envResource.selectHost}
           />
         )}
 
@@ -1145,6 +1143,7 @@ export default function ServiceDetail() {
         {tab === 'secret' && (
           <KeyValueEditor
             title="Secrets"
+            hosts={availableHosts}
             versions={secretResource.versions}
             selectedVersionIndex={secretResource.selectedVersionIndex}
             onSelectVersion={secretResource.selectVersion}
@@ -1158,9 +1157,6 @@ export default function ServiceDetail() {
             isSubmitting={secretResource.isSubmitting}
             emptyMessage="No secrets found for this service"
             error={secretResource.error}
-            hosts={secretResource.hosts}
-            selectedHost={secretResource.selectedHost}
-            onSelectHost={secretResource.selectHost}
           />
         )}
 
