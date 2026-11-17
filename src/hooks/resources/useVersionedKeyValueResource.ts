@@ -132,8 +132,8 @@ export function useVersionedKeyValueResource({
             return copy;
         });
     };
-    const addEntry = () => setEntries(prev =>
-        [...prev, { host: "", key: "", value: "" }]
+    const addEntry = (host = "") => setEntries(prev =>
+        [...prev, { host, key: "", value: "" }]
     );
     const removeEntry = (index: number) =>
         setEntries(prev => prev.filter((_, i) => i !== index));
