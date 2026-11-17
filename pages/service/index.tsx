@@ -1122,6 +1122,7 @@ export default function ServiceDetail() {
         {tab === 'env' && (
           <KeyValueEditor
             title="Environment Variables"
+            hosts={availableHosts}
             versions={envResource.versions}
             selectedVersionIndex={envResource.selectedVersionIndex}
             onSelectVersion={envResource.selectVersion}
@@ -1142,6 +1143,7 @@ export default function ServiceDetail() {
         {tab === 'secret' && (
           <KeyValueEditor
             title="Secrets"
+            hosts={availableHosts}
             versions={secretResource.versions}
             selectedVersionIndex={secretResource.selectedVersionIndex}
             onSelectVersion={secretResource.selectVersion}
