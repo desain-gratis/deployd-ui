@@ -31,7 +31,7 @@ type Props = {
     field: "host" | "key" | "value",
     value: any
   ) => void;
-  onAddEntry: () => void;
+  onAddEntry: (host?: string) => void;
   onRemoveEntry: (index: number) => void;
 
   emptyMessage?: string;
@@ -130,6 +130,13 @@ export default function KeyValueEditor({
 
     return { value, value_by_host };
   }, [entries]);
+
+  const displayHosts = useMemo(() => {
+    return Array.from(new Set([
+      ...hosts,
+      ...entries.map((entry) => String(entry.host ?? "").trim()).filter(Boolean),
+    ])).sort((a, b) => a.localeCompare(b));
+  }, [hosts, entries]);
 
   const isLatestSelected =
     selectedVersionIndex === 0;
@@ -244,109 +251,88 @@ export default function KeyValueEditor({
 
         {/* Content */}
         {format === "kv" && (
-          <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-            <div className="overflow-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-800/60">
-                  <tr className="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    <th className="px-4 py-3 font-medium">Host</th>
-                    <th className="px-4 py-3 font-medium">Key</th>
-                    <th className="px-4 py-3 font-medium">Value</th>
-                    <th className="px-4 py-3 font-medium text-right w-24">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
+          <div className="space-y-6">
+            {[
+              { host: "", label: "Global" },
+              ...displayHosts.map((host) => ({ host, label: host })),
+            ].map(({ host, label }) => {
+              const hostEntries = entries
+                .map((entry, index) => ({ entry, index }))
+                .filter(({ entry }) => String(entry.host ?? "").trim() === host);
 
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {entries.length > 0 ? (
-                    entries.map((entry, idx) => (
-                      <tr
-                        key={idx}
-                        className={`
-                  transition-colors
-                  ${idx % 2 === 0
-                            ? "bg-white dark:bg-gray-900"
-                            : "bg-gray-50/40 dark:bg-gray-900/40"
-                          }
-                  hover:bg-gray-100/70 dark:hover:bg-gray-800/60
-                `}
-                      >
-                        <td className="px-4 py-3 align-middle">
-                          <input
-                            type="text"
-                            value={entry.host ?? ""}
-                            onChange={(e) =>
-                              onUpdateEntry(idx, "host", e.target.value)
-                            }
-                            className="w-full bg-transparent border-none outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400"
-                            placeholder="Global (all hosts)"
-                          />
-                        </td>
-
-                        <td className="px-4 py-3 align-middle">
-                          <input
-                            type="text"
-                            value={entry.key}
-                            onChange={(e) =>
-                              onUpdateEntry(idx, "key", e.target.value)
-                            }
-                            className="w-full bg-transparent border-none outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400"
-                            placeholder="KEY_NAME"
-                          />
-                        </td>
-
-                        <td className="px-4 py-3 align-middle">
-                          <input
-                            type="text"
-                            value={String(entry.value ?? "")}
-                            onChange={(e) =>
-                              onUpdateEntry(
-                                idx,
-                                "value",
-                                e.target.value
-                              )
-                            }
-                            className="w-full bg-transparent border-none outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400"
-                            placeholder="Value"
-                          />
-                        </td>
-
-                        <td className="px-4 py-3 align-middle text-right">
-                          <button
-                            onClick={() => onRemoveEntry(idx)}
-                            className="text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
-                          >
-                            Remove
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={4}
-                        className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
-                      >
-                        No key-value entries
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800">
-              <button
-                onClick={onAddEntry}
-                className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
-              >
-                + Add Entry
-              </button>
-            </div>
+              return (
+                <section
+                  key={host || "__global__"}
+                  className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+                >
+                  <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60">
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                      {label}
+                    </h4>
+                  </div>
+                  <div className="overflow-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50/70 dark:bg-gray-800/30">
+                        <tr className="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                          <th className="px-4 py-3 font-medium w-2/5">Key</th>
+                          <th className="px-4 py-3 font-medium">Value</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        {hostEntries.length > 0 ? hostEntries.map(({ entry, index }, rowIndex) => (
+                          <tr key={index} className={rowIndex % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/40 dark:bg-gray-900/40"}>
+                            <td className="px-4 py-3 align-middle">
+                              <input
+                                type="text"
+                                value={entry.key}
+                                onChange={(event) => onUpdateEntry(index, "key", event.target.value)}
+                                className="w-full bg-transparent border-none outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400"
+                                placeholder="KEY_NAME"
+                              />
+                            </td>
+                            <td className="px-4 py-3 align-middle">
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="text"
+                                  value={String(entry.value ?? "")}
+                                  onChange={(event) => onUpdateEntry(index, "value", event.target.value)}
+                                  className="min-w-0 flex-1 bg-transparent border-none outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400"
+                                  placeholder="Value"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => onRemoveEntry(index)}
+                                  className="shrink-0 text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )) : (
+                          <tr>
+                            <td colSpan={2} className="px-4 py-5 text-center text-sm text-gray-500 dark:text-gray-400">
+                              No key-value entries
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800">
+                    <button
+                      type="button"
+                      onClick={() => onAddEntry(host)}
+                      className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                    >
+                      + Add Entry
+                    </button>
+                  </div>
+                </section>
+              );
+            })}
           </div>
         )}
-
 
         {format === "json" && (
           <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
