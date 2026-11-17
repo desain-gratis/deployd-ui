@@ -333,14 +333,20 @@ export default function KeyValueEditor({
 
             {displayHosts.length > 0 && (
               <details className="group overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800/60 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800/60 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">
                   <span>Host-specific configurations</span>
                   <span className="flex items-center gap-3 text-xs font-normal text-gray-500 dark:text-gray-400">
                     <span>{displayHosts.length} {displayHosts.length === 1 ? "host" : "hosts"}</span>
-                    <span className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
-                      <span>Expand</span>
-                      <span aria-hidden="true" className="text-base leading-none transition-transform group-open:rotate-180">⌄</span>
-                    </span>
+                    <svg
+                      aria-hidden="true"
+                      className="w-4 h-4 transition-transform group-open:rotate-180"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
                   </span>
                 </summary>
                 <div className="space-y-4 border-t border-gray-100 dark:border-gray-800 p-4">
