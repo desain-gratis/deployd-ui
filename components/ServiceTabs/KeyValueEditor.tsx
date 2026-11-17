@@ -380,7 +380,7 @@ export default function KeyValueEditor({
 
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {entries.length > 0 ? (
-                    [...entries].map((entry, idx) => ({ entry, idx })).sort((a, b) => String(a.entry.host ?? "").localeCompare(String(b.entry.host ?? "")) || String(a.entry.key ?? "").localeCompare(String(b.entry.key ?? ""))).map(({ entry, idx }) => (
+                    entries.map((entry, idx) => (
                       <tr
                         key={idx}
                         className={`
