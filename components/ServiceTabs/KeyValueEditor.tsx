@@ -254,7 +254,6 @@ export default function KeyValueEditor({
           <div className="space-y-6">
             {[
               { host: "", label: "Global" },
-              ...displayHosts.map((host) => ({ host, label: host })),
             ].map(({ host, label }) => {
               const hostEntries = entries
                 .map((entry, index) => ({ entry, index }))
@@ -331,6 +330,95 @@ export default function KeyValueEditor({
                 </section>
               );
             })}
+
+            {displayHosts.length > 0 && (
+              <details className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800/60 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                  <span>Host-specific configurations</span>
+                  <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
+                    {displayHosts.length} {displayHosts.length === 1 ? "host" : "hosts"}
+                  </span>
+                </summary>
+                <div className="space-y-4 border-t border-gray-100 dark:border-gray-800 p-4">
+                  {displayHosts.map((host) => {
+                    const hostEntries = entries
+                      .map((entry, index) => ({ entry, index }))
+                      .filter(({ entry }) => String(entry.host ?? "").trim() === host);
+
+                    return (
+                      <section
+                        key={host}
+                        className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+                      >
+                        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60">
+                          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                            {host}
+                          </h4>
+                        </div>
+                        <div className="overflow-auto">
+                          <table className="w-full text-sm">
+                            <thead className="bg-gray-50/70 dark:bg-gray-800/30">
+                              <tr className="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                <th className="px-4 py-3 font-medium w-2/5">Key</th>
+                                <th className="px-4 py-3 font-medium">Value</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                              {hostEntries.length > 0 ? hostEntries.map(({ entry, index }, rowIndex) => (
+                                <tr key={index} className={rowIndex % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/40 dark:bg-gray-900/40"}>
+                                  <td className="px-4 py-3 align-middle">
+                                    <input
+                                      type="text"
+                                      value={entry.key}
+                                      onChange={(event) => onUpdateEntry(index, "key", event.target.value)}
+                                      className="w-full bg-transparent border-none outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400"
+                                      placeholder="KEY_NAME"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-3 align-middle">
+                                    <div className="flex items-center gap-3">
+                                      <input
+                                        type="text"
+                                        value={String(entry.value ?? "")}
+                                        onChange={(event) => onUpdateEntry(index, "value", event.target.value)}
+                                        className="min-w-0 flex-1 bg-transparent border-none outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400"
+                                        placeholder="Value"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => onRemoveEntry(index)}
+                                        className="shrink-0 text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
+                                      >
+                                        Remove
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )) : (
+                                <tr>
+                                  <td colSpan={2} className="px-4 py-5 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    No key-value entries
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800">
+                          <button
+                            type="button"
+                            onClick={() => onAddEntry(host)}
+                            className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                          >
+                            + Add Entry
+                          </button>
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
+              </details>
+            )}
           </div>
         )}
 
