@@ -1135,9 +1135,6 @@ export default function ServiceDetail() {
             isSubmitting={envResource.isSubmitting}
             emptyMessage="No environment variables found for this service"
             error={envResource.error}
-            hosts={envResource.hosts}
-            selectedHost={envResource.selectedHost}
-            onSelectHost={envResource.selectHost}
           />
         )}
 
@@ -1158,9 +1155,6 @@ export default function ServiceDetail() {
             isSubmitting={secretResource.isSubmitting}
             emptyMessage="No secrets found for this service"
             error={secretResource.error}
-            hosts={secretResource.hosts}
-            selectedHost={secretResource.selectedHost}
-            onSelectHost={secretResource.selectHost}
           />
         )}
 
